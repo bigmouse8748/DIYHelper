@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Object Detection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Image Object Detection</h1>
+    <label for="prompt">System Prompt:</label>
+    <textarea id="prompt" rows="3" placeholder="Enter system prompt here"></textarea>
+    <input type="file" id="image-input" multiple accept="image/*">
+    <button id="analyze-button">Analyze Images</button>
+    <p id="error-message" class="error"></p>
+    <div id="preview"></div>
+    <div id="results" class="results"></div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Uploaded files
+uploads/
+
+# Logs and OS files
+npm-debug.log*
+.DS_Store
