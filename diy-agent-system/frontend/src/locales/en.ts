@@ -2,8 +2,10 @@ export default {
   // Navigation
   nav: {
     home: 'Home',
+    toolIdentification: 'Tool ID',
     projects: 'My Projects',
     about: 'About',
+    dashboard: 'Dashboard',
     logo: 'DIY Smart Assistant'
   },
   
@@ -188,9 +190,139 @@ export default {
     filter: 'Filter',
     sort: 'Sort',
     refresh: 'Refresh',
-    seconds: 's'
+    seconds: 's',
+    ready: 'Ready',
+    inStock: 'In Stock',
+    outOfStock: 'Out of Stock',
+    viewProduct: 'View Product',
+    viewDetails: 'View Details',
+    viewAll: 'View All'
   },
   
+  // Tool Identification
+  toolIdentification: {
+    title: 'Tool Identification Assistant',
+    subtitle: 'Upload tool images to identify models and find purchase options',
+    loginRequired: 'Login Required',
+    loginPrompt: 'Please login to use the tool identification feature',
+    dailyUsage: 'Daily Usage',
+    uploadImage: 'Upload Tool Image',
+    dragOrClick: 'Drag image here or click to upload',
+    uploadHint: 'Support multiple image formats for accurate identification results',
+    supportedFormats: 'Supports JPG, PNG formats, max 10MB',
+    includeAlternatives: 'Include alternative products',
+    exactOnly: 'Exact matches only',
+    alternativesDesc: 'Show similar alternative products and different brand options',
+    exactDesc: 'Show only perfectly matching product results',
+    highAccuracy: 'High accuracy mode',
+    fastMode: 'Fast mode',
+    highAccuracyDesc: 'Use AI deep analysis for more accurate but slower identification',
+    fastModeDesc: 'Quick identification, suitable for simple tool recognition',
+    examples: 'Examples',
+    example1: 'Drill',
+    example2: 'Saw',
+    example3: 'Wrench',
+    identify: 'Identify Tool',
+    selectImage: 'Please select an image first',
+    quotaExceeded: 'Daily quota exceeded',
+    upgradePrompt: 'Upgrade membership for more identifications',
+    identifySuccess: 'Tool identified successfully!',
+    identifyFailed: 'Tool identification failed',
+    invalidFormat: 'Unsupported file format, please upload image files',
+    fileTooLarge: 'File too large, please upload images smaller than 10MB',
+    rotateNotImplemented: 'Image rotation feature coming soon',
+    toolInfo: 'Tool Information',
+    confidence: 'Confidence',
+    toolName: 'Tool Name',
+    brand: 'Brand',
+    model: 'Model',
+    category: 'Category',
+    specifications: 'Specifications',
+    exactMatches: 'Exact Matches',
+    alternatives: 'Alternative Products',
+    recentHistory: 'Recent History',
+    stage1: 'Analyzing image',
+    stage2: 'Identifying tool features',
+    stage3: 'Matching product database',
+    stage4: 'Generating identification results'
+  },
+
+  // Tool Categories
+  toolCategory: {
+    power_tools: 'Power Tools',
+    hand_tools: 'Hand Tools',
+    measuring: 'Measuring Tools',
+    cutting: 'Cutting Tools',
+    fastening: 'Fastening Tools',
+    outdoor: 'Outdoor Tools',
+    unknown: 'Unknown'
+  },
+
+  // Authentication
+  auth: {
+    welcome: 'Welcome Back',
+    createAccount: 'Create Account',
+    loginSubtitle: 'Sign in to access tool identification features',
+    registerSubtitle: 'Join us to unlock powerful tool identification',
+    login: 'Login',
+    register: 'Register',
+    logout: 'Logout',
+    username: 'Username',
+    password: 'Password',
+    email: 'Email',
+    confirmPassword: 'Confirm Password',
+    acceptTerms: 'I accept the terms and conditions',
+    noAccount: "Don't have an account?",
+    haveAccount: 'Already have an account?',
+    demoAccount: 'Demo Account',
+    demoDescription: 'Try our features with a premium demo account',
+    tryDemo: 'Try Demo',
+    loginSuccess: 'Login successful!',
+    loginFailed: 'Login failed',
+    registerSuccess: 'Registration successful!',
+    registerFailed: 'Registration failed',
+    logoutSuccess: 'Logout successful',
+    usernameRequired: 'Username is required',
+    passwordRequired: 'Password is required',
+    emailRequired: 'Email is required',
+    confirmPasswordRequired: 'Please confirm your password',
+    usernameLength: 'Username must be 3-20 characters',
+    passwordLength: 'Password must be at least 6 characters',
+    emailInvalid: 'Please enter a valid email',
+    passwordMismatch: 'Passwords do not match',
+    usernameInvalid: 'Username can only contain letters, numbers, and underscores',
+    mustAcceptTerms: 'You must accept the terms and conditions'
+  },
+
+  // Membership
+  membership: {
+    free: 'Free',
+    premium: 'Premium',
+    pro: 'Pro',
+    level: 'Membership Level',
+    upgrade: 'Upgrade',
+    freeMembershipIncluded: 'Free Membership Included',
+    upgradeHint: 'Upgrade for unlimited identifications and advanced features',
+    freeFeatures: {
+      identifications: '5 identifications per day',
+      history: '7 days history',
+      alternatives: '3 alternative products'
+    }
+  },
+
+  // Dashboard
+  dashboard: {
+    subtitle: 'Manage your tool identification history and account',
+    userInfo: 'User Information',
+    identificationHistory: 'Identification History',
+    noHistory: 'No identification history yet',
+    startIdentifying: 'Start Identifying Tools',
+    loadHistoryFailed: 'Failed to load history',
+    confirmDelete: 'Are you sure you want to delete this identification?',
+    deleteSuccess: 'Identification deleted successfully',
+    deleteFailed: 'Failed to delete identification'
+  },
+
   // Footer
   footer: {
     copyright: '© 2024 DIY Smart Assistant. Built with AI Agent Architecture'

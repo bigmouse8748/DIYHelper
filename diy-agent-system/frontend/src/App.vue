@@ -2,7 +2,7 @@
   <div id="app">
     <el-container>
       <!-- 顶部导航栏 -->
-      <el-header>
+      <el-header v-if="!hideNavigation">
         <div class="header-content">
           <div class="logo">
             <el-icon :size="24"><Tools /></el-icon>
@@ -11,21 +11,52 @@
           <div class="nav-right">
             <nav class="nav-menu">
               <router-link to="/" class="nav-link">{{ $t('nav.home') }}</router-link>
+              <router-link to="/tool-identification" class="nav-link">{{ $t('nav.toolIdentification') }}</router-link>
               <router-link to="/projects" class="nav-link">{{ $t('nav.projects') }}</router-link>
               <router-link to="/about" class="nav-link">{{ $t('nav.about') }}</router-link>
             </nav>
+            
+            <!-- User menu or login -->
+            <div class="user-section">
+              <div v-if="authStore.isAuthenticated" class="user-menu">
+                <el-dropdown trigger="click">
+                  <span class="user-trigger">
+                    <el-icon><User /></el-icon>
+                    {{ authStore.currentUser?.username }}
+                    <el-icon><ArrowDown /></el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item @click="goToDashboard">
+                        <el-icon><User /></el-icon>
+                        {{ $t('nav.dashboard') }}
+                      </el-dropdown-item>
+                      <el-dropdown-item @click="handleLogout" divided>
+                        <el-icon><SwitchButton /></el-icon>
+                        {{ $t('auth.logout') }}
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+              <div v-else class="auth-buttons">
+                <el-button text @click="goToLogin">{{ $t('auth.login') }}</el-button>
+                <el-button type="primary" @click="goToRegister">{{ $t('auth.register') }}</el-button>
+              </div>
+            </div>
+            
             <LanguageSwitcher />
           </div>
         </div>
       </el-header>
 
       <!-- 主要内容区域 -->
-      <el-main>
+      <el-main :class="{ 'no-header': hideNavigation }">
         <router-view />
       </el-main>
 
       <!-- 底部 -->
-      <el-footer>
+      <el-footer v-if="!hideNavigation">
         <div class="footer-content">
           <p>{{ $t('footer.copyright') }}</p>
         </div>
@@ -35,8 +66,45 @@
 </template>
 
 <script setup lang="ts">
-import { Tools } from '@element-plus/icons-vue'
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Tools, User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
+const authStore = useAuthStore()
+
+// Hide navigation on login/register pages
+const hideNavigation = computed(() => route.meta?.hideNav === true)
+
+// Methods
+const goToLogin = () => {
+  router.push('/login')
+}
+
+const goToRegister = () => {
+  router.push('/register')
+}
+
+const goToDashboard = () => {
+  router.push('/dashboard')
+}
+
+const handleLogout = () => {
+  authStore.logout()
+  ElMessage.success(t('auth.logoutSuccess'))
+  router.push('/')
+}
+
+// Initialize auth on app mount
+onMounted(() => {
+  authStore.initializeAuth()
+})
 </script>
 
 <style scoped>
@@ -81,6 +149,35 @@ import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+}
+
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.user-trigger:hover {
+  background-color: #f5f7fa;
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.el-main.no-header {
+  padding-top: 0;
 }
 
 .nav-menu {

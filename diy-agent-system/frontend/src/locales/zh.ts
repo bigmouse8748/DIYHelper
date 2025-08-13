@@ -2,8 +2,10 @@ export default {
   // 导航
   nav: {
     home: '首页',
+    toolIdentification: '工具识别',
     projects: '我的项目',
     about: '关于',
+    dashboard: '个人中心',
     logo: 'DIY智能助手'
   },
 
@@ -188,7 +190,137 @@ export default {
     filter: '筛选',
     sort: '排序',
     refresh: '刷新',
-    seconds: '秒'
+    seconds: '秒',
+    ready: '已就绪',
+    inStock: '有库存',
+    outOfStock: '无库存',
+    viewProduct: '查看产品',
+    viewDetails: '查看详情',
+    viewAll: '查看全部'
+  },
+
+  // 工具识别
+  toolIdentification: {
+    title: '工具识别助手',
+    subtitle: '上传工具图片，识别型号并找到购买选项',
+    loginRequired: '需要登录',
+    loginPrompt: '请登录以使用工具识别功能',
+    dailyUsage: '每日使用量',
+    uploadImage: '上传工具图片',
+    dragOrClick: '拖拽图片到此处或点击上传',
+    uploadHint: '支持多种格式图片，获得精准识别结果',
+    supportedFormats: '支持 JPG、PNG 格式，最大 10MB',
+    includeAlternatives: '包含替代产品',
+    exactOnly: '仅精确匹配',
+    alternativesDesc: '显示类似的替代产品和不同品牌选项',
+    exactDesc: '仅显示完全匹配的产品结果',
+    highAccuracy: '高精度模式',
+    fastMode: '快速模式',
+    highAccuracyDesc: '使用AI深度分析，识别更准确但速度较慢',
+    fastModeDesc: '快速识别，适合简单工具识别',
+    examples: '示例',
+    example1: '电钻',
+    example2: '电锯',
+    example3: '扳手',
+    identify: '识别工具',
+    selectImage: '请先选择图片',
+    quotaExceeded: '每日配额已用尽',
+    upgradePrompt: '升级会员以获得更多识别次数',
+    identifySuccess: '工具识别成功！',
+    identifyFailed: '工具识别失败',
+    invalidFormat: '不支持的文件格式，请上传图片文件',
+    fileTooLarge: '文件过大，请上传小于10MB的图片',
+    rotateNotImplemented: '图片旋转功能即将推出',
+    toolInfo: '工具信息',
+    confidence: '置信度',
+    toolName: '工具名称',
+    brand: '品牌',
+    model: '型号',
+    category: '类别',
+    specifications: '规格参数',
+    exactMatches: '精确匹配',
+    alternatives: '替代产品',
+    recentHistory: '最近历史',
+    stage1: '正在分析图片',
+    stage2: '识别工具特征',
+    stage3: '匹配产品数据库',
+    stage4: '生成识别结果'
+  },
+
+  // 工具分类
+  toolCategory: {
+    power_tools: '电动工具',
+    hand_tools: '手动工具',
+    measuring: '测量工具',
+    cutting: '切割工具',
+    fastening: '固定工具',
+    outdoor: '户外工具',
+    unknown: '未知'
+  },
+
+  // 用户认证
+  auth: {
+    welcome: '欢迎回来',
+    createAccount: '创建账户',
+    loginSubtitle: '登录以使用工具识别功能',
+    registerSubtitle: '注册以解锁强大的工具识别功能',
+    login: '登录',
+    register: '注册',
+    logout: '退出',
+    username: '用户名',
+    password: '密码',
+    email: '邮箱',
+    confirmPassword: '确认密码',
+    acceptTerms: '我接受服务条款',
+    noAccount: '没有账户？',
+    haveAccount: '已有账户？',
+    demoAccount: '演示账户',
+    demoDescription: '使用高级演示账户体验功能',
+    tryDemo: '试用演示',
+    loginSuccess: '登录成功！',
+    loginFailed: '登录失败',
+    registerSuccess: '注册成功！',
+    registerFailed: '注册失败',
+    logoutSuccess: '退出成功',
+    usernameRequired: '请输入用户名',
+    passwordRequired: '请输入密码',
+    emailRequired: '请输入邮箱',
+    confirmPasswordRequired: '请确认密码',
+    usernameLength: '用户名长度为3-20个字符',
+    passwordLength: '密码至少6个字符',
+    emailInvalid: '请输入有效的邮箱地址',
+    passwordMismatch: '两次密码不一致',
+    usernameInvalid: '用户名只能包含字母、数字和下划线',
+    mustAcceptTerms: '您必须接受服务条款'
+  },
+
+  // 会员等级
+  membership: {
+    free: '免费',
+    premium: '高级',
+    pro: '专业',
+    level: '会员等级',
+    upgrade: '升级',
+    freeMembershipIncluded: '包含免费会员',
+    upgradeHint: '升级以获得无限识别和高级功能',
+    freeFeatures: {
+      identifications: '每日5次识别',
+      history: '7天历史记录',
+      alternatives: '3个替代产品'
+    }
+  },
+
+  // 用户面板
+  dashboard: {
+    subtitle: '管理您的工具识别历史和账户信息',
+    userInfo: '用户信息',
+    identificationHistory: '识别历史',
+    noHistory: '暂无识别历史记录',
+    startIdentifying: '开始识别工具',
+    loadHistoryFailed: '加载历史失败',
+    confirmDelete: '确定要删除此识别记录吗？',
+    deleteSuccess: '识别记录删除成功',
+    deleteFailed: '删除识别记录失败'
   },
 
   // 页脚
