@@ -79,58 +79,6 @@ export default {
     
     messages: {
       loginRequired: '请登录以使用此功能'
-    },
-    
-    // 用于DIY助手页面的传统字段
-    title: 'DIY智能助手',
-    subtitle: '上传图片，获取AI驱动的DIY项目分析，并获得智能工具和材料推荐',
-    uploadTitle: '上传项目图片',
-    uploadTip: '支持JPG、PNG格式，最多4张图片',
-    projectDescription: '项目描述',
-    projectDescriptionPlaceholder: '描述您的DIY项目（可选）',
-    projectType: '项目类型',
-    projectTypePlaceholder: '选择项目类型（可选）',
-    budgetRange: '预算范围',
-    budgetRangePlaceholder: '选择预算范围（可选）',
-    analyzeButton: '开始智能分析',
-    analyzing: '分析中...',
-    
-    // 项目类型
-    projectTypes: {
-      woodworking: '木工制作',
-      electronics: '电子制作', 
-      crafts: '工艺制作',
-      homeDecor: '家居装饰',
-      repair: '维修保养',
-      other: '其他'
-    },
-    
-    // 预算范围
-    budgetRanges: {
-      'under50': '50美元以下',
-      '50to150': '50-150美元', 
-      '150to300': '150-300美元',
-      '300to500': '300-500美元',
-      'over500': '500美元以上'
-    },
-    
-    // 加载状态
-    loading: {
-      uploading: '正在上传图片...',
-      analyzing: 'AI正在分析您的项目...',
-      searching: '正在搜索相关产品...',
-      assessing: '正在评估产品质量...',
-      generating: '正在生成分析报告...'
-    },
-    
-    // 消息提示
-    messages: {
-      uploadError: '请至少选择一张图片',
-      imageTypeError: '只允许上传图片文件！',
-      imageSizeError: '图片大小不能超过10MB！',
-      analysisError: '分析失败，请重试',
-      analysisSuccess: '分析完成！',
-      maxImagesWarning: '最多允许4张图片，当前已选择{count}张图片'
     }
   },
 

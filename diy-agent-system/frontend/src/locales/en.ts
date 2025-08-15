@@ -79,58 +79,6 @@ export default {
     
     messages: {
       loginRequired: 'Please login to access this feature'
-    },
-    
-    // Legacy fields for DIY Assistant page
-    title: 'DIY Smart Assistant',
-    subtitle: 'Upload images and get AI-powered analysis of your DIY projects with smart tool and material recommendations',
-    uploadTitle: 'Upload Project Images',
-    uploadTip: 'Supports JPG, PNG formats, maximum 4 images',
-    projectDescription: 'Project Description',
-    projectDescriptionPlaceholder: 'Describe your DIY project (optional)',
-    projectType: 'Project Type',
-    projectTypePlaceholder: 'Select project type (optional)',
-    budgetRange: 'Budget Range',
-    budgetRangePlaceholder: 'Select budget range (optional)',
-    analyzeButton: 'Start Smart Analysis',
-    analyzing: 'Analyzing...',
-    
-    // Project Types
-    projectTypes: {
-      woodworking: 'Woodworking',
-      electronics: 'Electronics', 
-      crafts: 'Arts & Crafts',
-      homeDecor: 'Home Decor',
-      repair: 'Repair & Maintenance',
-      other: 'Other'
-    },
-    
-    // Budget Ranges
-    budgetRanges: {
-      'under50': 'Under $50',
-      '50to150': '$50 - $150', 
-      '150to300': '$150 - $300',
-      '300to500': '$300 - $500',
-      'over500': 'Over $500'
-    },
-    
-    // Loading States
-    loading: {
-      uploading: 'Uploading images...',
-      analyzing: 'AI is analyzing your project...',
-      searching: 'Searching for related products...',
-      assessing: 'Assessing product quality...',
-      generating: 'Generating analysis report...'
-    },
-    
-    // Messages
-    messages: {
-      uploadError: 'Please select at least one image',
-      imageTypeError: 'Only image files are allowed!',
-      imageSizeError: 'Image size cannot exceed 10MB!',
-      analysisError: 'Analysis failed, please try again',
-      analysisSuccess: 'Analysis completed!',
-      maxImagesWarning: 'Maximum 4 images allowed, currently selected {count} images'
     }
   },
   
