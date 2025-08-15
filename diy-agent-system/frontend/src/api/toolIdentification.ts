@@ -3,7 +3,7 @@
  */
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002'
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
 
 // Create axios instance with auth interceptor
 const apiClient = axios.create({
@@ -31,7 +31,13 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.log('=== API DEBUG: Response interceptor triggered ===')
+    console.log('Error status:', error.response?.status)
+    console.log('Error URL:', error.config?.url)
+    console.log('Full error:', error)
+    
     if (error.response?.status === 401) {
+      console.log('=== API DEBUG: 401 ERROR - Redirecting to login ===')
       // Token expired or invalid
       localStorage.removeItem('access_token')
       localStorage.removeItem('user_info')

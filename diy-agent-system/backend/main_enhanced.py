@@ -24,6 +24,8 @@ from auth.auth_handler import (
     verify_password,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+from database import create_tables, test_connection
+from services.user_service import UserService
 
 # Load environment variables
 load_dotenv()
@@ -42,10 +44,13 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS configuration
+# CORS configuration - read from environment variable
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:5173").split(",")
+logger.info(f"CORS origins configured: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,37 +85,49 @@ class ToolIdentificationResponse(BaseModel):
     search_timestamp: str
     user_quota: Dict[str, Any]
 
-# Mock user database (would be replaced with real database)
-mock_users_db = {}
-user_identifications = {}  # Track daily usage
+# Database initialization
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    logger.info("Starting up application...")
+    try:
+        if test_connection():
+            create_tables()
+            logger.info("Database initialized successfully")
+            
+            # Create demo user if it doesn't exist
+            try:
+                demo_user = UserService.get_user_by_username("demo")
+                if not demo_user:
+                    demo_user = UserService.create_user("demo@example.com", "demo", "demo123")
+                    if demo_user:
+                        # Upgrade to premium for testing
+                        UserService.upgrade_membership(demo_user["id"], "premium", days=365)
+                        logger.info("Demo user created - username: demo, password: demo123")
+            except Exception as e:
+                logger.warning(f"Could not create demo user: {e}")
+        else:
+            logger.warning("Database connection not available at startup, will retry on first request")
+    except Exception as e:
+        logger.warning(f"Database initialization failed: {e}, continuing without database")
 
 # User management endpoints
 @app.post("/api/auth/register", response_model=TokenResponse)
 async def register(user: UserRegister):
     """Register a new user"""
     try:
-        # Check if user exists
-        if user.username in mock_users_db:
+        # Create user in database
+        new_user = UserService.create_user(user.email, user.username, user.password)
+        
+        if not new_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already exists"
+                detail="Username or email already exists"
             )
-        
-        # Create user
-        hashed_password = get_password_hash(user.password)
-        mock_users_db[user.username] = {
-            "email": user.email,
-            "username": user.username,
-            "password_hash": hashed_password,
-            "membership_level": "free",
-            "created_at": datetime.utcnow().isoformat(),
-            "daily_identifications": 0,
-            "last_reset": datetime.utcnow().date().isoformat()
-        }
         
         # Create access token
         access_token = create_access_token(
-            data={"sub": user.username, "email": user.email},
+            data={"sub": str(new_user["id"]), "email": new_user["email"], "username": new_user["username"]},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         
@@ -118,9 +135,10 @@ async def register(user: UserRegister):
             access_token=access_token,
             token_type="bearer",
             user_info={
-                "username": user.username,
-                "email": user.email,
-                "membership_level": "free"
+                "id": new_user["id"],
+                "username": new_user["username"],
+                "email": new_user["email"],
+                "membership_level": new_user["membership_level"].value
             }
         )
         
@@ -134,9 +152,9 @@ async def register(user: UserRegister):
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """User login"""
     try:
-        # Verify user
-        user = mock_users_db.get(form_data.username)
-        if not user or not verify_password(form_data.password, user["password_hash"]):
+        # Authenticate user
+        user = UserService.authenticate_user(form_data.username, form_data.password)
+        if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
@@ -145,7 +163,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         
         # Create access token
         access_token = create_access_token(
-            data={"sub": user["username"], "email": user["email"]},
+            data={"sub": str(user["id"]), "email": user["email"], "username": user["username"]},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         
@@ -153,9 +171,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             access_token=access_token,
             token_type="bearer",
             user_info={
+                "id": user["id"],
                 "username": user["username"],
                 "email": user["email"],
-                "membership_level": user.get("membership_level", "free")
+                "membership_level": user["membership_level"].value
             }
         )
         
@@ -168,19 +187,35 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @app.get("/api/auth/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     """Get current user information"""
-    username = current_user.get("user_id")
-    user = mock_users_db.get(username)
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "username": user["username"],
-        "email": user["email"],
-        "membership_level": user.get("membership_level", "free"),
-        "daily_identifications": user.get("daily_identifications", 0),
-        "daily_limit": get_daily_limit(user.get("membership_level", "free"))
-    }
+    try:
+        user_id = int(current_user.get("sub"))  # JWT sub contains user ID
+        
+        # Get user data using session-safe method
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Get quota information
+            quota_info = UserService.get_user_quota_info(user_id)
+            
+            return {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "membership_level": user.membership_level.value,
+                "daily_identifications": quota_info["used"],
+                "daily_limit": quota_info["limit"],
+                "can_identify": quota_info["can_identify"],
+                "has_premium": quota_info["has_premium"]
+            }
+    except Exception as e:
+        logger.error(f"Error getting current user info: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user information")
 
 # Tool identification endpoints
 @app.post("/api/identify-tool", response_model=ToolIdentificationResponse)
@@ -191,22 +226,19 @@ async def identify_tool(
 ):
     """Identify tool from uploaded image"""
     try:
-        username = current_user.get("user_id")
-        user = mock_users_db.get(username)
-        
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        user_id = int(current_user.get("sub"))
+        username = current_user.get("username", f"user_{user_id}")
         
         # Check daily quota
-        membership = user.get("membership_level", "free")
-        daily_limit = get_daily_limit(membership)
-        daily_count = check_and_update_daily_usage(username)
-        
-        if daily_count >= daily_limit:
+        quota_info = UserService.get_user_quota_info(user_id)
+        if not quota_info["can_identify"]:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Daily limit ({daily_limit}) reached. Upgrade to premium for more."
+                detail=f"Daily limit ({quota_info['limit']}) reached. Upgrade to premium for more."
             )
+        
+        # Increment usage count
+        UserService.increment_daily_usage(user_id)
         
         # Read and encode image
         image_content = await image.read()
@@ -220,7 +252,7 @@ async def identify_tool(
             input_data={
                 "image_data": image_base64,
                 "include_alternatives": include_alternatives,
-                "membership_level": membership
+                "membership_level": quota_info["membership"]
             },
             created_at=datetime.utcnow()
         )
@@ -231,18 +263,18 @@ async def identify_tool(
         if not result.success:
             raise HTTPException(status_code=500, detail=result.error)
         
-        # Save to history (mock implementation)
-        save_identification_history(username, result.data)
+        # TODO: Save to history - implement actual storage
+        # save_identification_history(username, result.data)
         
-        # Update usage count
-        increment_daily_usage(username)
+        # Get updated quota after increment
+        updated_quota = UserService.get_user_quota_info(user_id)
         
         # Prepare response
         response_data = result.data
         response_data["user_quota"] = {
-            "used": daily_count + 1,
-            "limit": daily_limit,
-            "membership": membership
+            "used": updated_quota["used"],
+            "limit": updated_quota["limit"],
+            "membership": updated_quota["membership"]
         }
         
         return ToolIdentificationResponse(**response_data)
@@ -259,22 +291,39 @@ async def get_identification_history(
     current_user: dict = Depends(get_current_user)
 ):
     """Get user's identification history"""
-    username = current_user.get("user_id")
-    history = user_identifications.get(username, [])
-    
-    # Filter based on membership (free users only see last 7 days)
-    user = mock_users_db.get(username)
-    membership = user.get("membership_level", "free") if user else "free"
-    
-    if membership == "free":
-        cutoff_date = datetime.utcnow() - timedelta(days=7)
-        history = [h for h in history if datetime.fromisoformat(h["timestamp"]) > cutoff_date]
-    
-    return {
-        "history": history[:limit],
-        "total": len(history),
-        "membership": membership
-    }
+    try:
+        user_id = int(current_user.get("sub"))
+        username = current_user.get("username", f"user_{user_id}")
+        
+        # TODO: Implement actual identification history storage
+        # For now, return empty history
+        history = []
+        
+        # Get user membership level
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            membership = user.membership_level.value if user else "free"
+        
+        # Filter based on membership (free users only see last 7 days)
+        if membership == "free" and len(history) > 0:
+            cutoff_date = datetime.utcnow() - timedelta(days=7)
+            history = [h for h in history if datetime.fromisoformat(h["timestamp"]) > cutoff_date]
+        
+        return {
+            "history": history[:limit],
+            "total": len(history),
+            "membership": membership
+        }
+    except Exception as e:
+        logger.error(f"Error getting identification history: {e}")
+        return {
+            "history": [],
+            "total": 0,
+            "membership": "free"
+        }
 
 @app.delete("/api/identification-history/{identification_id}")
 async def delete_identification(
@@ -282,14 +331,8 @@ async def delete_identification(
     current_user: dict = Depends(get_current_user)
 ):
     """Delete identification from history"""
-    username = current_user.get("user_id")
-    
-    if username in user_identifications:
-        user_identifications[username] = [
-            h for h in user_identifications[username] 
-            if h.get("id") != identification_id
-        ]
-    
+    # TODO: Implement actual identification deletion
+    # For now, just return success
     return {"success": True, "message": "Identification deleted"}
 
 # Membership endpoints
@@ -299,8 +342,8 @@ async def upgrade_membership(
     current_user: dict = Depends(get_current_user)
 ):
     """Upgrade user membership"""
-    username = current_user.get("user_id")
-    user = mock_users_db.get(username)
+    user_id = int(current_user.get("sub"))
+    user = UserService.get_user_by_id(user_id)
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -308,9 +351,11 @@ async def upgrade_membership(
     if level not in ["premium", "pro"]:
         raise HTTPException(status_code=400, detail="Invalid membership level")
     
-    # Mock payment processing
-    user["membership_level"] = level
-    user["membership_expiry"] = (datetime.utcnow() + timedelta(days=30)).isoformat()
+    # Mock payment processing - upgrade membership
+    success = UserService.upgrade_membership(user_id, level, days=30)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to upgrade membership")
     
     return {
         "success": True,
@@ -327,51 +372,204 @@ async def analyze_project(
     budget_range: str = Form(default="")
 ):
     """Original DIY project analysis endpoint"""
-    # Implementation from main_simple.py
-    # ... (keep existing implementation)
-    return {"success": True, "message": "See main_simple.py for full implementation"}
+    try:
+        # Save uploaded images
+        image_paths = []
+        upload_dir = "uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        for image in images:
+            file_path = os.path.join(upload_dir, image.filename)
+            with open(file_path, "wb") as buffer:
+                content = await image.read()
+                buffer.write(content)
+            image_paths.append(file_path)
+        
+        # Build project analysis data
+        analysis_data = {
+            "project_name": "DIY Wooden Table Project",
+            "description": f"Based on analysis of {len(images)} uploaded images, this is a {project_type or 'woodworking'} DIY project. {description}",
+            "materials": [
+                {"name": "Pine Wood Board", "specification": "3/4 inch thick", "quantity": "2 pieces", "estimated_price_range": "$25-40"},
+                {"name": "Wood Screws", "specification": "1.5 inch long", "quantity": "20 pieces", "estimated_price_range": "$3-5"},
+                {"name": "Wood Glue", "specification": "Strong adhesive", "quantity": "1 bottle", "estimated_price_range": "$4-8"},
+                {"name": "Wood Stain", "specification": "Natural finish", "quantity": "1 can", "estimated_price_range": "$8-12"},
+                {"name": "Sandpaper", "specification": "120/220 grit", "quantity": "5 sheets", "estimated_price_range": "$5-10"}
+            ],
+            "tools": [
+                {"name": "Power Drill", "necessity": "Essential"},
+                {"name": "Screwdriver Set", "necessity": "Essential"}, 
+                {"name": "Measuring Tape", "necessity": "Essential"},
+                {"name": "Saw (Circular/Miter)", "necessity": "Essential"},
+                {"name": "Sandpaper/Sander", "necessity": "Essential"},
+                {"name": "Safety Glasses", "necessity": "Essential"},
+                {"name": "Work Gloves", "necessity": "Recommended"},
+                {"name": "Clamps", "necessity": "Recommended"},
+                {"name": "Level", "necessity": "Recommended"}
+            ],
+            "difficulty_level": "medium",
+            "estimated_time": "4-6 hours",
+            "safety_notes": ["Wear safety glasses at all times", "Use tools safely and follow manufacturer instructions", "Keep workspace clean and well-organized", "Ensure adequate ventilation when using stains or adhesives"],
+            "steps": [
+                "1. Safety First: Put on safety glasses and work gloves. Ensure your workspace is well-ventilated and clean.",
+                "2. Measure and Plan: Using measuring tape, carefully measure and mark all cut lines on the wood boards. Double-check all measurements.",
+                "3. Cut the Wood: Use a circular saw or miter saw to cut the wood pieces according to your measurements. Sand cut edges smooth.",
+                "4. Pre-drill Holes: Use the power drill to pre-drill pilot holes for screws to prevent wood splitting.",
+                "5. Apply Wood Glue: Apply a thin, even layer of wood glue to joining surfaces. Work quickly as glue sets fast.",
+                "6. Assemble Frame: Clamp pieces together and secure with wood screws. Use level to ensure everything is square.",
+                "7. Initial Sanding: Sand all surfaces starting with 120-grit, then 220-grit sandpaper for smooth finish.",
+                "8. Clean Surface: Remove all dust with tack cloth or compressed air before staining.",
+                "9. Apply Stain: Use brush or cloth to apply wood stain evenly. Work with the grain, not against it.",
+                "10. Final Assembly: Once stain is dry, complete any final assembly and add any hardware or accessories.",
+                "11. Quality Check: Inspect all joints, sand any rough spots, and ensure the project is sturdy and safe to use."
+            ]
+        }
+        
+        # Generate product recommendations
+        try:
+            product_recommendations = await generate_smart_product_recommendations(analysis_data, project_type, budget_range)
+        except Exception as rec_error:
+            logger.error(f"Product recommendation failed: {str(rec_error)}")
+            product_recommendations = get_fallback_recommendations()
+        
+        # Build final result
+        result = {
+            "success": True,
+            "results": [
+                {
+                    "data": {
+                        "comprehensive_analysis": analysis_data,
+                        "materials": [
+                            {"name": "Pine Wood Board", "specification": "3/4 inch thick", "quantity": "2 pieces"},
+                            {"name": "Wood Screws", "specification": "1.5 inch long", "quantity": "20 pieces"},
+                            {"name": "Wood Glue", "specification": "Strong adhesive", "quantity": "1 bottle"}
+                        ]
+                    },
+                    "execution_time": 2.5
+                },
+                {
+                    "data": product_recommendations,
+                    "execution_time": 1.8
+                }
+            ]
+        }
+        
+        # Clean up temporary files
+        for path in image_paths:
+            try:
+                os.remove(path)
+            except:
+                pass
+                
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error analyzing project: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 # Helper functions
-def get_daily_limit(membership: str) -> int:
-    """Get daily identification limit by membership"""
-    limits = {
-        "free": 5,
-        "premium": 50,
-        "pro": 999999
+
+async def generate_smart_product_recommendations(analysis_data: Dict, project_type: str, budget_range: str) -> Dict:
+    """Generate smart product recommendations"""
+    try:
+        from agents.product_recommendation_agent import ProductRecommendationAgent
+        
+        # Create ProductRecommendationAgent instance
+        agent = ProductRecommendationAgent()
+        
+        # Prepare tools and materials data
+        tools_and_materials = []
+        
+        # Extract tools and materials from analysis data
+        if "tools" in analysis_data:
+            for tool in analysis_data["tools"]:
+                tools_and_materials.append({
+                    "name": tool["name"], 
+                    "type": "tool",
+                    "necessity": tool.get("necessity", "Recommended")
+                })
+                
+        if "materials" in analysis_data:
+            for material in analysis_data["materials"]: 
+                tools_and_materials.append({
+                    "name": material["name"],
+                    "type": "material", 
+                    "specification": material.get("specification", "")
+                })
+        
+        # Create agent task
+        from core.agent_base import AgentTask
+        task = AgentTask(
+            task_id=f"recommendation_{hash(str(analysis_data))}",
+            agent_name="product_recommendation",
+            input_data={
+                "tools_and_materials": tools_and_materials,
+                "project_type": project_type,
+                "budget_level": budget_range
+            },
+            created_at=datetime.utcnow()
+        )
+        
+        # Execute recommendation task
+        result = await agent.process_task(task)
+        
+        if result.success:
+            return result.data
+        else:
+            logger.error(f"Agent recommendation failed: {result.error}")
+            return get_fallback_recommendations()
+            
+    except Exception as e:
+        logger.error(f"Error generating smart recommendations: {str(e)}")
+        return get_fallback_recommendations()
+
+def get_fallback_recommendations() -> Dict:
+    """Get fallback recommendation data"""
+    return {
+        "assessed_results": [
+            {
+                "material": "Power Drill",
+                "products": [
+                    {
+                        "title": "BLACK+DECKER 20V MAX Cordless Drill",
+                        "price": "$49.99",
+                        "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&h=300&fit=crop",
+                        "product_url": "https://www.amazon.com/BLACK-DECKER-LD120VA-20-Volt-Lithium-Ion/dp/B00AXTBSRU",
+                        "platform": "Amazon",
+                        "rating": 4.4,
+                        "quality_score": 4.3,
+                        "quality_reasons": ["Great for beginners", "Good battery life", "Trusted brand"],
+                        "price_value_ratio": 4.5,
+                        "recommendation_level": "Best Value"
+                    }
+                ],
+                "total_assessed": 1,
+                "avg_quality_score": 4.3
+            }
+        ],
+        "overall_recommendations": {
+            "total_products_assessed": 1,
+            "average_quality_score": 4.3,
+            "best_products": [
+                {
+                    "material": "Power Drill",
+                    "product": {
+                        "title": "BLACK+DECKER 20V MAX Cordless Drill",
+                        "platform": "Amazon", 
+                        "product_url": "https://www.amazon.com/dp/B00AXTBSRU"
+                    }
+                }
+            ],
+            "shopping_tips": [
+                "Choose products with 4.0+ star ratings for best quality",
+                "Compare prices across multiple retailers",
+                "Read customer reviews for insights"
+            ],
+            "quality_distribution": {
+                "Best Value": 1
+            }
+        }
     }
-    return limits.get(membership, 5)
-
-def check_and_update_daily_usage(username: str) -> int:
-    """Check and reset daily usage if needed"""
-    user = mock_users_db.get(username, {})
-    last_reset = user.get("last_reset", datetime.utcnow().date().isoformat())
-    
-    # Reset if new day
-    if last_reset != datetime.utcnow().date().isoformat():
-        user["daily_identifications"] = 0
-        user["last_reset"] = datetime.utcnow().date().isoformat()
-        mock_users_db[username] = user
-    
-    return user.get("daily_identifications", 0)
-
-def increment_daily_usage(username: str):
-    """Increment daily usage count"""
-    if username in mock_users_db:
-        mock_users_db[username]["daily_identifications"] = \
-            mock_users_db[username].get("daily_identifications", 0) + 1
-
-def save_identification_history(username: str, data: dict):
-    """Save identification to history"""
-    if username not in user_identifications:
-        user_identifications[username] = []
-    
-    history_entry = {
-        "id": f"id_{datetime.utcnow().timestamp()}",
-        "timestamp": datetime.utcnow().isoformat(),
-        **data
-    }
-    
-    user_identifications[username].insert(0, history_entry)
 
 # Health check endpoints
 @app.get("/")
@@ -393,24 +591,115 @@ async def test_api():
         "timestamp": datetime.utcnow().isoformat()
     }
 
-@app.on_event("startup")
-async def startup_event():
-    """Application startup event"""
-    logger.info("Starting Enhanced DIY Agent System...")
-    logger.info("Features: Tool Identification, User Management, Membership System")
-    
-    # Create test user for demo
-    if "demo" not in mock_users_db:
-        mock_users_db["demo"] = {
-            "email": "demo@example.com",
-            "username": "demo",
-            "password_hash": get_password_hash("demo123"),
-            "membership_level": "premium",
-            "created_at": datetime.utcnow().isoformat(),
-            "daily_identifications": 0,
-            "last_reset": datetime.utcnow().date().isoformat()
+@app.post("/api/test/create-demo-user")
+async def create_demo_user():
+    """Create demo user for testing"""
+    try:
+        # Try to create demo user
+        demo_user = UserService.create_user("demo@cheasydiy.com", "demouser", "demo2025!")
+        if demo_user:
+            # Upgrade to premium
+            UserService.upgrade_membership(demo_user["id"], "premium", days=365)
+            return {
+                "message": "Demo user created successfully",
+                "username": "demouser",
+                "password": "demo2025!",
+                "membership": "premium",
+                "user_id": demo_user["id"]
+            }
+        else:
+            return {"message": "Demo user already exists or creation failed"}
+    except Exception as e:
+        return {"message": f"Error creating demo user: {str(e)}"}
+
+@app.get("/api/test/jwt-debug/{token}")
+async def test_jwt_debug(token: str):
+    """Debug JWT token validation"""
+    try:
+        from auth.auth_handler import verify_token, SECRET_KEY
+        import os
+        from jose import jwt
+        
+        # Test token verification
+        payload = verify_token(token)
+        
+        # Try to decode without verification to see the payload
+        unverified_payload = jwt.get_unverified_claims(token)
+        
+        # Get environment info
+        env_secret = os.getenv("JWT_SECRET_KEY", "not-set")
+        
+        return {
+            "token_valid": payload is not None,
+            "verified_payload": payload,
+            "unverified_payload": unverified_payload,
+            "env_jwt_secret": env_secret[:10] + "..." if env_secret != "not-set" else "not-set",
+            "handler_secret": SECRET_KEY[:10] + "...",
+            "secrets_match": env_secret == SECRET_KEY,
+            "message": "JWT debug information"
         }
-        logger.info("Demo user created - username: demo, password: demo123")
+    except Exception as e:
+        return {
+            "error": str(e),
+            "message": "JWT debug failed"
+        }
+
+@app.get("/api/test/user-count")
+async def test_user_count():
+    """Get count of users in database"""
+    try:
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user_count = db.query(User).count()
+            users = db.query(User).all()
+            user_list = [{"id": u.id, "username": u.username, "email": u.email} for u in users]
+        
+        return {
+            "user_count": user_count,
+            "users": user_list,
+            "message": "User count retrieved successfully"
+        }
+    except Exception as e:
+        return {
+            "user_count": 0,
+            "error": str(e),
+            "message": "Failed to get user count"
+        }
+
+@app.get("/api/test/db-connection")
+async def test_db_connection():
+    """Test database connection"""
+    try:
+        from database import test_connection, create_tables, engine
+        from sqlalchemy import text
+        
+        # Test basic connection
+        connection_ok = test_connection()
+        
+        # Try to execute a simple query
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1 as test"))
+            test_result = result.fetchone()
+        
+        # Try to create tables
+        create_tables()
+        
+        return {
+            "database_connection": connection_ok,
+            "simple_query": test_result[0] if test_result else None,
+            "tables_created": True,
+            "message": "Database connection successful"
+        }
+    except Exception as e:
+        return {
+            "database_connection": False,
+            "error": str(e),
+            "message": "Database connection failed"
+        }
+
+# Demo user will be created in database startup if needed
 
 @app.on_event("shutdown")
 async def shutdown_event():

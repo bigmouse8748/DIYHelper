@@ -18,7 +18,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against hash"""
@@ -64,4 +64,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if user_id is None:
         raise credentials_exception
     
-    return {"user_id": user_id, "email": payload.get("email")}
+    return {"sub": user_id, "email": payload.get("email"), "username": payload.get("username")}

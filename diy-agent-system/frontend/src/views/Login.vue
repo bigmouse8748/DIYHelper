@@ -57,16 +57,12 @@
       <!-- Demo account info -->
       <el-card class="demo-info" shadow="never">
         <div class="demo-content">
-          <h3>{{ $t('auth.demoAccount') }}</h3>
-          <p>{{ $t('auth.demoDescription') }}</p>
+          <h3>Test Your Login</h3>
+          <p>Please register a new account or try manual login to test the authentication system.</p>
           <div class="demo-credentials">
-            <el-tag>{{ $t('auth.username') }}: demo</el-tag>
-            <el-tag>{{ $t('auth.password') }}: demo123</el-tag>
-            <el-tag type="warning">{{ $t('membership.premium') }}</el-tag>
+            <el-tag>Database: PostgreSQL</el-tag>
+            <el-tag type="success">Persistent Storage</el-tag>
           </div>
-          <el-button size="small" @click="loginWithDemo">
-            {{ $t('auth.tryDemo') }}
-          </el-button>
         </div>
       </el-card>
     </div>
@@ -103,12 +99,23 @@ const loginRules: FormRules = {
 }
 
 const handleLogin = async () => {
-  if (!loginFormRef.value) return
+  console.log('=== LOGIN DEBUG: handleLogin called ===')
+  console.log('loginForm:', loginForm)
+  console.log('loginFormRef.value:', loginFormRef.value)
+  
+  if (!loginFormRef.value) {
+    console.log('=== LOGIN DEBUG: No form ref, returning ===')
+    return
+  }
 
   try {
+    console.log('=== LOGIN DEBUG: Starting validation ===')
     await loginFormRef.value.validate()
+    console.log('=== LOGIN DEBUG: Validation passed ===')
     
+    console.log('=== LOGIN DEBUG: Calling authStore.loginUser ===')
     await authStore.loginUser(loginForm.username, loginForm.password)
+    console.log('=== LOGIN DEBUG: Login completed successfully ===')
     
     ElMessage.success(t('auth.loginSuccess'))
     
@@ -116,15 +123,12 @@ const handleLogin = async () => {
     const redirect = router.currentRoute.value.query.redirect as string
     router.push(redirect || '/tool-identification')
   } catch (error: any) {
+    console.log('=== LOGIN DEBUG: Login error ===', error)
     ElMessage.error(error.message || t('auth.loginFailed'))
   }
 }
 
-const loginWithDemo = () => {
-  loginForm.username = 'demo'
-  loginForm.password = 'demo123'
-  handleLogin()
-}
+// Demo login removed for security
 
 const goToRegister = () => {
   router.push('/register')

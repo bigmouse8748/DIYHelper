@@ -59,3 +59,20 @@ logs/
 *.sqlite
 *.sqlite3
 *.db
+
+# AWS and Terraform files
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+terraform/
+
+# Sensitive files
+ecr_password.txt
+temp_task_def.json
+new_task_def.json
+AWS_CREDENTIALS.md
+SECRETS.md
+
+# Docker
+docker-compose.override.yml

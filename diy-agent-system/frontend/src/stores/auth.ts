@@ -34,17 +34,25 @@ export const useAuthStore = defineStore('auth', () => {
   async function loginUser(username: string, password: string) {
     isLoading.value = true
     try {
+      console.log('=== AUTH DEBUG: Starting login ===')
       const response = await login(username, password)
+      console.log('=== AUTH DEBUG: Login response ===', response)
       
       // Save token and user info
       token.value = response.access_token
       user.value = response.user_info
       
+      console.log('=== AUTH DEBUG: Setting localStorage ===')
       localStorage.setItem('access_token', response.access_token)
       localStorage.setItem('user_info', JSON.stringify(response.user_info))
       
+      console.log('=== AUTH DEBUG: Verifying localStorage ===')
+      console.log('Token stored:', localStorage.getItem('access_token'))
+      console.log('User stored:', localStorage.getItem('user_info'))
+      
       return response
     } catch (error: any) {
+      console.log('=== AUTH DEBUG: Login error ===', error)
       throw new Error(error.response?.data?.detail || 'Login failed')
     } finally {
       isLoading.value = false
@@ -88,6 +96,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    console.log('=== AUTH DEBUG: LOGOUT CALLED ===')
+    console.trace('Logout called from:')
     user.value = null
     token.value = null
     localStorage.removeItem('access_token')
@@ -98,12 +108,17 @@ export const useAuthStore = defineStore('auth', () => {
     const storedToken = localStorage.getItem('access_token')
     const storedUser = localStorage.getItem('user_info')
     
+    console.log('=== AUTH DEBUG: Initializing auth ===')
+    console.log('Stored token exists:', !!storedToken)
+    console.log('Stored user exists:', !!storedUser)
+    
     if (storedToken && storedUser) {
       token.value = storedToken
       try {
         user.value = JSON.parse(storedUser)
-        // Refresh user data
-        loadCurrentUser()
+        console.log('=== AUTH DEBUG: User loaded from storage ===', user.value)
+        // Temporarily disable auto refresh to debug logout issue
+        // loadCurrentUser()
       } catch (error) {
         console.error('Failed to parse stored user data:', error)
         logout()

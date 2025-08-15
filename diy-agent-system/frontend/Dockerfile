@@ -1,30 +1,41 @@
-# 构建阶段
-FROM node:18-alpine as build
+# Frontend Dockerfile
+
+# Build stage
+FROM node:18-alpine as builder
 
 WORKDIR /app
 
-# 复制包文件
+# Copy package files
 COPY package*.json ./
 
-# 安装依赖
-RUN npm install --production=false
+# Install dependencies
+RUN npm ci --production=false
 
-# 复制源代码
+# Copy source code
 COPY . .
 
-# 构建应用
+# Set build environment variable for API endpoint
+ARG VITE_API_URL=http://localhost:8001
+ENV VITE_API_URL=$VITE_API_URL
+
+# Build the application
 RUN npm run build
 
-# 运行阶段
+# Production stage
 FROM nginx:alpine
 
-# 复制构建结果
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy built files from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制nginx配置
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 暴露端口
+# Expose port
 EXPOSE 80
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost || exit 1
+
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
