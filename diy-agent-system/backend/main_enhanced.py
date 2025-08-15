@@ -348,7 +348,7 @@ async def upgrade_membership(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if level not in ["premium", "pro"]:
+    if level not in ["premium", "pro", "admin"]:
         raise HTTPException(status_code=400, detail="Invalid membership level")
     
     # Mock payment processing - upgrade membership
@@ -385,45 +385,83 @@ async def analyze_project(
                 buffer.write(content)
             image_paths.append(file_path)
         
-        # Build project analysis data
-        analysis_data = {
-            "project_name": "DIY Wooden Table Project",
-            "description": f"Based on analysis of {len(images)} uploaded images, this is a {project_type or 'woodworking'} DIY project. {description}",
-            "materials": [
-                {"name": "Pine Wood Board", "specification": "3/4 inch thick", "quantity": "2 pieces", "estimated_price_range": "$25-40"},
-                {"name": "Wood Screws", "specification": "1.5 inch long", "quantity": "20 pieces", "estimated_price_range": "$3-5"},
-                {"name": "Wood Glue", "specification": "Strong adhesive", "quantity": "1 bottle", "estimated_price_range": "$4-8"},
-                {"name": "Wood Stain", "specification": "Natural finish", "quantity": "1 can", "estimated_price_range": "$8-12"},
-                {"name": "Sandpaper", "specification": "120/220 grit", "quantity": "5 sheets", "estimated_price_range": "$5-10"}
-            ],
-            "tools": [
-                {"name": "Power Drill", "necessity": "Essential"},
-                {"name": "Screwdriver Set", "necessity": "Essential"}, 
-                {"name": "Measuring Tape", "necessity": "Essential"},
-                {"name": "Saw (Circular/Miter)", "necessity": "Essential"},
-                {"name": "Sandpaper/Sander", "necessity": "Essential"},
-                {"name": "Safety Glasses", "necessity": "Essential"},
-                {"name": "Work Gloves", "necessity": "Recommended"},
-                {"name": "Clamps", "necessity": "Recommended"},
-                {"name": "Level", "necessity": "Recommended"}
-            ],
-            "difficulty_level": "medium",
-            "estimated_time": "4-6 hours",
-            "safety_notes": ["Wear safety glasses at all times", "Use tools safely and follow manufacturer instructions", "Keep workspace clean and well-organized", "Ensure adequate ventilation when using stains or adhesives"],
-            "steps": [
-                "1. Safety First: Put on safety glasses and work gloves. Ensure your workspace is well-ventilated and clean.",
-                "2. Measure and Plan: Using measuring tape, carefully measure and mark all cut lines on the wood boards. Double-check all measurements.",
-                "3. Cut the Wood: Use a circular saw or miter saw to cut the wood pieces according to your measurements. Sand cut edges smooth.",
-                "4. Pre-drill Holes: Use the power drill to pre-drill pilot holes for screws to prevent wood splitting.",
-                "5. Apply Wood Glue: Apply a thin, even layer of wood glue to joining surfaces. Work quickly as glue sets fast.",
-                "6. Assemble Frame: Clamp pieces together and secure with wood screws. Use level to ensure everything is square.",
-                "7. Initial Sanding: Sand all surfaces starting with 120-grit, then 220-grit sandpaper for smooth finish.",
-                "8. Clean Surface: Remove all dust with tack cloth or compressed air before staining.",
-                "9. Apply Stain: Use brush or cloth to apply wood stain evenly. Work with the grain, not against it.",
-                "10. Final Assembly: Once stain is dry, complete any final assembly and add any hardware or accessories.",
-                "11. Quality Check: Inspect all joints, sand any rough spots, and ensure the project is sturdy and safe to use."
-            ]
-        }
+        # Use OpenAI Vision API for real image analysis if available
+        from services.openai_vision_service import vision_service
+        
+        # Analyze the first image with OpenAI Vision
+        if images and len(images) > 0:
+            try:
+                # Read and encode the first image
+                first_image = images[0]
+                first_image.file.seek(0)  # Reset file pointer
+                image_content = await first_image.read()
+                image_base64 = base64.b64encode(image_content).decode('utf-8')
+                
+                # Get AI analysis
+                analysis_data = await vision_service.analyze_diy_project(
+                    image_base64=image_base64,
+                    project_description=description
+                )
+                
+                # Add user's project type if specified
+                if project_type:
+                    analysis_data["project_type"] = project_type
+                    
+                logger.info("Successfully analyzed project with OpenAI Vision")
+                
+            except Exception as e:
+                logger.error(f"Failed to analyze with OpenAI Vision: {e}")
+                # Fall back to mock data
+                analysis_data = {
+                    "project_name": "DIY Wooden Table Project",
+                    "description": f"Based on analysis of {len(images)} uploaded images, this is a {project_type or 'woodworking'} DIY project. {description}",
+                    "materials": [
+                        {"name": "Pine Wood Board", "specification": "3/4 inch thick", "quantity": "2 pieces", "estimated_price_range": "$25-40"},
+                        {"name": "Wood Screws", "specification": "1.5 inch long", "quantity": "20 pieces", "estimated_price_range": "$3-5"},
+                        {"name": "Wood Glue", "specification": "Strong adhesive", "quantity": "1 bottle", "estimated_price_range": "$4-8"},
+                        {"name": "Wood Stain", "specification": "Natural finish", "quantity": "1 can", "estimated_price_range": "$8-12"},
+                        {"name": "Sandpaper", "specification": "120/220 grit", "quantity": "5 sheets", "estimated_price_range": "$5-10"}
+                    ],
+                    "tools": [
+                        {"name": "Power Drill", "necessity": "Essential"},
+                        {"name": "Screwdriver Set", "necessity": "Essential"}, 
+                        {"name": "Measuring Tape", "necessity": "Essential"},
+                        {"name": "Saw (Circular/Miter)", "necessity": "Essential"},
+                        {"name": "Sandpaper/Sander", "necessity": "Essential"},
+                        {"name": "Safety Glasses", "necessity": "Essential"},
+                        {"name": "Work Gloves", "necessity": "Recommended"},
+                        {"name": "Clamps", "necessity": "Recommended"},
+                        {"name": "Level", "necessity": "Recommended"}
+                    ],
+                    "difficulty_level": "medium",
+                    "estimated_time": "4-6 hours",
+                    "safety_notes": ["Wear safety glasses at all times", "Use tools safely and follow manufacturer instructions", "Keep workspace clean and well-organized", "Ensure adequate ventilation when using stains or adhesives"],
+                    "steps": [
+                        "1. Safety First: Put on safety glasses and work gloves. Ensure your workspace is well-ventilated and clean.",
+                        "2. Measure and Plan: Using measuring tape, carefully measure and mark all cut lines on the wood boards. Double-check all measurements.",
+                        "3. Cut the Wood: Use a circular saw or miter saw to cut the wood pieces according to your measurements. Sand cut edges smooth.",
+                        "4. Pre-drill Holes: Use the power drill to pre-drill pilot holes for screws to prevent wood splitting.",
+                        "5. Apply Wood Glue: Apply a thin, even layer of wood glue to joining surfaces. Work quickly as glue sets fast.",
+                        "6. Assemble Frame: Clamp pieces together and secure with wood screws. Use level to ensure everything is square.",
+                        "7. Initial Sanding: Sand all surfaces starting with 120-grit, then 220-grit sandpaper for smooth finish.",
+                        "8. Clean Surface: Remove all dust with tack cloth or compressed air before staining.",
+                        "9. Apply Stain: Use brush or cloth to apply wood stain evenly. Work with the grain, not against it.",
+                        "10. Final Assembly: Once stain is dry, complete any final assembly and add any hardware or accessories.",
+                        "11. Quality Check: Inspect all joints, sand any rough spots, and ensure the project is sturdy and safe to use."
+                    ]
+                }
+        else:
+            # No images provided, use default mock data
+            analysis_data = {
+                "project_name": "DIY Project",
+                "description": f"Project analysis for {project_type or 'general'} DIY project. {description}",
+                "materials": [],
+                "tools": [],
+                "difficulty_level": "medium",
+                "estimated_time": "varies",
+                "safety_notes": ["Always follow safety guidelines"],
+                "steps": ["Upload an image for detailed analysis"]
+            }
         
         # Generate product recommendations
         try:
@@ -611,6 +649,117 @@ async def create_demo_user():
             return {"message": "Demo user already exists or creation failed"}
     except Exception as e:
         return {"message": f"Error creating demo user: {str(e)}"}
+
+@app.post("/api/admin/create-admin-user")
+async def create_admin_user(
+    admin_email: str = Form(...),
+    admin_username: str = Form(...),
+    admin_password: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Create admin user - only accessible by existing admin"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if current user is admin
+        from database import get_db_session
+        from models.user_models import User, MembershipLevel
+        
+        with get_db_session() as db:
+            current_user_obj = db.query(User).filter(User.id == user_id).first()
+            if not current_user_obj or not current_user_obj.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only admin users can create new admin accounts"
+                )
+        
+        # Create admin user
+        admin_user = UserService.create_user(admin_email, admin_username, admin_password)
+        if not admin_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username or email already exists"
+            )
+        
+        # Upgrade to admin
+        success = UserService.upgrade_membership(admin_user["id"], "admin", days=36500)  # 100 years
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to set admin privileges")
+        
+        return {
+            "message": "Admin user created successfully",
+            "username": admin_username,
+            "email": admin_email,
+            "membership": "admin",
+            "user_id": admin_user["id"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating admin user: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create admin user")
+
+@app.post("/api/setup/create-first-admin")
+async def create_first_admin(
+    admin_email: str = Form(...),
+    admin_username: str = Form(...),
+    admin_password: str = Form(...),
+    setup_key: str = Form(...)
+):
+    """Create first admin user - only works if no admin exists and correct setup key"""
+    try:
+        # Check setup key
+        expected_setup_key = os.getenv("ADMIN_SETUP_KEY", "setup_admin_2025")
+        if setup_key != expected_setup_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid setup key"
+            )
+        
+        # Check if any admin already exists
+        from database import get_db_session
+        from models.user_models import User, MembershipLevel
+        
+        with get_db_session() as db:
+            existing_admin = db.query(User).filter(
+                User.membership_level == MembershipLevel.ADMIN
+            ).first()
+            
+            if existing_admin:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Admin user already exists"
+                )
+        
+        # Create first admin user
+        admin_user = UserService.create_user(admin_email, admin_username, admin_password)
+        if not admin_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username or email already exists"
+            )
+        
+        # Set admin privileges
+        success = UserService.upgrade_membership(admin_user["id"], "admin", days=36500)  # 100 years
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to set admin privileges")
+        
+        return {
+            "message": "First admin user created successfully",
+            "username": admin_username,
+            "email": admin_email,
+            "membership": "admin",
+            "user_id": admin_user["id"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating first admin user: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create first admin user")
 
 @app.get("/api/test/jwt-debug/{token}")
 async def test_jwt_debug(token: str):

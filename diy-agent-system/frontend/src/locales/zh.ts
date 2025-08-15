@@ -2,6 +2,7 @@ export default {
   // 导航
   nav: {
     home: '首页',
+    diyAssistant: 'DIY助手',
     toolIdentification: '工具识别',
     projects: '我的项目',
     about: '关于',
@@ -11,6 +12,130 @@ export default {
 
   // 首页
   home: {
+    hero: {
+      title: 'DIY智能助手',
+      subtitle: 'AI驱动的项目分析和工具识别平台，专为DIY爱好者设计',
+      getStarted: '开始使用',
+      startProject: '开始新项目'
+    },
+    
+    features: {
+      title: '我们的功能',
+      tryNow: '立即试用',
+      loginRequired: '需要登录',
+      
+      diyAssistant: {
+        title: 'DIY智能助手',
+        description: '上传图片，获取AI驱动的DIY项目分析，并获得智能工具和材料推荐',
+        benefits: [
+          'AI驱动的项目分析',
+          '智能材料推荐',
+          '实时产品定价',
+          '逐步指导'
+        ]
+      },
+      
+      toolIdentification: {
+        title: '工具识别',
+        description: '通过照片识别工具，获取详细规格、定价和购买选项',
+        benefits: [
+          '即时工具识别',
+          '详细规格说明',
+          '价格比较',
+          '购物推荐'
+        ]
+      }
+    },
+    
+    examples: {
+      title: '实际效果展示',
+      
+      diy: {
+        title: 'DIY项目分析',
+        description: '上传您的木工项目照片，获得全面指导',
+        features: ['材料清单', '工具推荐', '安全提示', '步骤指南']
+      },
+      
+      tool: {
+        title: '工具识别',
+        description: '识别任何工具，获得即时产品信息和购买选项',
+        features: ['品牌识别', '型号详情', '价格比较', '替代选项']
+      }
+    },
+    
+    authPrompt: {
+      title: '准备开始了吗？',
+      description: '免费注册，使用我们的AI驱动DIY工具，立即开始您的下一个项目！',
+      register: '免费注册',
+      login: '登录'
+    },
+    
+    welcomeBack: '欢迎回来，{username}！',
+    dashboardPrompt: {
+      description: '继续您的项目或开始新的创作',
+      dashboard: '前往控制台',
+      newProject: '新项目'
+    },
+    
+    messages: {
+      loginRequired: '请登录以使用此功能'
+    },
+    
+    // 用于DIY助手页面的传统字段
+    title: 'DIY智能助手',
+    subtitle: '上传图片，获取AI驱动的DIY项目分析，并获得智能工具和材料推荐',
+    uploadTitle: '上传项目图片',
+    uploadTip: '支持JPG、PNG格式，最多4张图片',
+    projectDescription: '项目描述',
+    projectDescriptionPlaceholder: '描述您的DIY项目（可选）',
+    projectType: '项目类型',
+    projectTypePlaceholder: '选择项目类型（可选）',
+    budgetRange: '预算范围',
+    budgetRangePlaceholder: '选择预算范围（可选）',
+    analyzeButton: '开始智能分析',
+    analyzing: '分析中...',
+    
+    // 项目类型
+    projectTypes: {
+      woodworking: '木工制作',
+      electronics: '电子制作', 
+      crafts: '工艺制作',
+      homeDecor: '家居装饰',
+      repair: '维修保养',
+      other: '其他'
+    },
+    
+    // 预算范围
+    budgetRanges: {
+      'under50': '50美元以下',
+      '50to150': '50-150美元', 
+      '150to300': '150-300美元',
+      '300to500': '300-500美元',
+      'over500': '500美元以上'
+    },
+    
+    // 加载状态
+    loading: {
+      uploading: '正在上传图片...',
+      analyzing: 'AI正在分析您的项目...',
+      searching: '正在搜索相关产品...',
+      assessing: '正在评估产品质量...',
+      generating: '正在生成分析报告...'
+    },
+    
+    // 消息提示
+    messages: {
+      uploadError: '请至少选择一张图片',
+      imageTypeError: '只允许上传图片文件！',
+      imageSizeError: '图片大小不能超过10MB！',
+      analysisError: '分析失败，请重试',
+      analysisSuccess: '分析完成！',
+      maxImagesWarning: '最多允许4张图片，当前已选择{count}张图片'
+    }
+  },
+
+  // DIY助手页面
+  diy: {
     title: 'DIY智能助手',
     subtitle: '上传图片，获取AI驱动的DIY项目分析，并获得智能工具和材料推荐',
     uploadTitle: '上传项目图片',

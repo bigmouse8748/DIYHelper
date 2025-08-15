@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     home: 'Home',
+    diyAssistant: 'DIY Assistant',
     toolIdentification: 'Tool ID',
     projects: 'My Projects',
     about: 'About',
@@ -11,6 +12,130 @@ export default {
   
   // Home Page
   home: {
+    hero: {
+      title: 'DIY Smart Assistant',
+      subtitle: 'AI-powered project analysis and tool identification platform for DIY enthusiasts',
+      getStarted: 'Get Started',
+      startProject: 'Start New Project'
+    },
+    
+    features: {
+      title: 'Our Features',
+      tryNow: 'Try Now',
+      loginRequired: 'Login Required',
+      
+      diyAssistant: {
+        title: 'DIY Smart Assistant',
+        description: 'Upload images and get AI-powered analysis of your DIY projects with smart tool and material recommendations',
+        benefits: [
+          'AI-powered project analysis',
+          'Smart material recommendations',
+          'Real-time product pricing',
+          'Step-by-step guidance'
+        ]
+      },
+      
+      toolIdentification: {
+        title: 'Tool Identification',
+        description: 'Identify tools from photos and get detailed specifications, pricing, and purchasing options',
+        benefits: [
+          'Instant tool recognition',
+          'Detailed specifications',
+          'Price comparison',
+          'Shopping recommendations'
+        ]
+      }
+    },
+    
+    examples: {
+      title: 'See It In Action',
+      
+      diy: {
+        title: 'DIY Project Analysis',
+        description: 'Upload a photo of your woodworking project and get comprehensive guidance',
+        features: ['Material List', 'Tool Recommendations', 'Safety Tips', 'Step-by-Step Guide']
+      },
+      
+      tool: {
+        title: 'Tool Identification',
+        description: 'Identify any tool and get instant product information and buying options',
+        features: ['Brand Recognition', 'Model Details', 'Price Comparison', 'Alternative Options']
+      }
+    },
+    
+    authPrompt: {
+      title: 'Ready to get started?',
+      description: 'Sign up for free to access our AI-powered DIY tools and start your next project today!',
+      register: 'Sign Up Free',
+      login: 'Login'
+    },
+    
+    welcomeBack: 'Welcome back, {username}!',
+    dashboardPrompt: {
+      description: 'Continue working on your projects or start something new',
+      dashboard: 'Go to Dashboard',
+      newProject: 'New Project'
+    },
+    
+    messages: {
+      loginRequired: 'Please login to access this feature'
+    },
+    
+    // Legacy fields for DIY Assistant page
+    title: 'DIY Smart Assistant',
+    subtitle: 'Upload images and get AI-powered analysis of your DIY projects with smart tool and material recommendations',
+    uploadTitle: 'Upload Project Images',
+    uploadTip: 'Supports JPG, PNG formats, maximum 4 images',
+    projectDescription: 'Project Description',
+    projectDescriptionPlaceholder: 'Describe your DIY project (optional)',
+    projectType: 'Project Type',
+    projectTypePlaceholder: 'Select project type (optional)',
+    budgetRange: 'Budget Range',
+    budgetRangePlaceholder: 'Select budget range (optional)',
+    analyzeButton: 'Start Smart Analysis',
+    analyzing: 'Analyzing...',
+    
+    // Project Types
+    projectTypes: {
+      woodworking: 'Woodworking',
+      electronics: 'Electronics', 
+      crafts: 'Arts & Crafts',
+      homeDecor: 'Home Decor',
+      repair: 'Repair & Maintenance',
+      other: 'Other'
+    },
+    
+    // Budget Ranges
+    budgetRanges: {
+      'under50': 'Under $50',
+      '50to150': '$50 - $150', 
+      '150to300': '$150 - $300',
+      '300to500': '$300 - $500',
+      'over500': 'Over $500'
+    },
+    
+    // Loading States
+    loading: {
+      uploading: 'Uploading images...',
+      analyzing: 'AI is analyzing your project...',
+      searching: 'Searching for related products...',
+      assessing: 'Assessing product quality...',
+      generating: 'Generating analysis report...'
+    },
+    
+    // Messages
+    messages: {
+      uploadError: 'Please select at least one image',
+      imageTypeError: 'Only image files are allowed!',
+      imageSizeError: 'Image size cannot exceed 10MB!',
+      analysisError: 'Analysis failed, please try again',
+      analysisSuccess: 'Analysis completed!',
+      maxImagesWarning: 'Maximum 4 images allowed, currently selected {count} images'
+    }
+  },
+  
+  // DIY Assistant Page
+  diy: {
     title: 'DIY Smart Assistant',
     subtitle: 'Upload images and get AI-powered analysis of your DIY projects with smart tool and material recommendations',
     uploadTitle: 'Upload Project Images',

@@ -15,6 +15,7 @@ class MembershipLevel(str, Enum):
     FREE = "free"
     PREMIUM = "premium"
     PRO = "pro"
+    ADMIN = "admin"
 
 class User(Base):
     __tablename__ = "users"
@@ -44,7 +45,8 @@ class User(Base):
         limits = {
             MembershipLevel.FREE: 5,
             MembershipLevel.PREMIUM: 50,
-            MembershipLevel.PRO: 999999  # Effectively unlimited
+            MembershipLevel.PRO: 999999,  # Effectively unlimited
+            MembershipLevel.ADMIN: 999999  # Unlimited for admin
         }
         return limits.get(self.membership_level, 5)
     
@@ -59,7 +61,11 @@ class User(Base):
     
     def has_premium_features(self) -> bool:
         """Check if user has premium features"""
-        if self.membership_level in [MembershipLevel.PREMIUM, MembershipLevel.PRO]:
+        if self.membership_level in [MembershipLevel.PREMIUM, MembershipLevel.PRO, MembershipLevel.ADMIN]:
             if self.membership_expiry is None or self.membership_expiry > datetime.utcnow():
                 return True
         return False
+    
+    def is_admin(self) -> bool:
+        """Check if user is admin"""
+        return self.membership_level == MembershipLevel.ADMIN

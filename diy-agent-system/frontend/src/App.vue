@@ -11,8 +11,8 @@
           <div class="nav-right">
             <nav class="nav-menu">
               <router-link to="/" class="nav-link">{{ $t('nav.home') }}</router-link>
-              <router-link to="/tool-identification" class="nav-link">{{ $t('nav.toolIdentification') }}</router-link>
-              <router-link to="/projects" class="nav-link">{{ $t('nav.projects') }}</router-link>
+              <router-link v-if="authStore.isAuthenticated" to="/diy-assistant" class="nav-link">{{ $t('nav.diyAssistant') }}</router-link>
+              <router-link v-if="authStore.isAuthenticated" to="/tool-identification" class="nav-link">{{ $t('nav.toolIdentification') }}</router-link>
               <router-link to="/about" class="nav-link">{{ $t('nav.about') }}</router-link>
             </nav>
             

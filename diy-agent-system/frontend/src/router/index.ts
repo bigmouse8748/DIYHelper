@@ -11,10 +11,16 @@ const routes = [
     meta: { title: 'DIY智能助手' }
   },
   {
+    path: '/diy-assistant',
+    name: 'DIYAssistant',
+    component: () => import('@/views/DIYAssistant.vue'),
+    meta: { title: 'DIY智能助手', requiresAuth: true }
+  },
+  {
     path: '/tool-identification',
     name: 'ToolIdentification',
     component: () => import('@/views/ToolIdentification.vue'),
-    meta: { title: '工具识别助手' }
+    meta: { title: '工具识别助手', requiresAuth: true }
   },
   {
     path: '/login',

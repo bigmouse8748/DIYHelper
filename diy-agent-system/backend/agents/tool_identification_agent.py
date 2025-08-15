@@ -154,15 +154,43 @@ class ToolIdentificationAgent(BaseAgent):
     async def _identify_tool(self, image_data: str) -> ToolInfo:
         """Identify tool from image using vision API or advanced pattern matching"""
         try:
-            # First try OpenAI Vision API if available
-            openai_result = await self._identify_with_openai_vision(image_data)
-            if openai_result:
-                return openai_result
+            # Use the OpenAI Vision service
+            from services.openai_vision_service import vision_service
+            
+            # Get tool identification from vision service
+            result = await vision_service.identify_tool(image_data)
+            
+            if result:
+                # Convert the result to ToolInfo
+                return ToolInfo(
+                    name=result.get("tool_name", "Unknown Tool"),
+                    brand=result.get("brand") if result.get("brand") != "Unknown" else None,
+                    model=result.get("model") if result.get("model") != "Unknown" else None,
+                    category=self._map_category(result.get("category", "other")),
+                    confidence=0.85,  # High confidence for real API results
+                    specifications={
+                        "primary_use": result.get("primary_use", ""),
+                        "features": result.get("features", []),
+                        "condition": result.get("condition", "unknown"),
+                        "estimated_value": result.get("estimated_value", "unknown")
+                    }
+                )
         except Exception as e:
             logger.warning(f"OpenAI Vision API failed: {str(e)}, falling back to intelligent analysis")
         
         # Fallback to intelligent pattern-based identification
         return await self._identify_with_intelligent_analysis(image_data)
+    
+    def _map_category(self, category: str) -> str:
+        """Map vision service category to our internal categories"""
+        category_map = {
+            "power tool": "power_tools",
+            "hand tool": "hand_tools",
+            "measuring": "measuring",
+            "safety": "cutting",
+            "other": "unknown"
+        }
+        return category_map.get(category.lower(), "unknown")
     
     async def _identify_with_openai_vision(self, image_data: str) -> Optional[ToolInfo]:
         """Identify tool using OpenAI Vision API"""
