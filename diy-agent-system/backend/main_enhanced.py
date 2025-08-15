@@ -26,6 +26,8 @@ from auth.auth_handler import (
 )
 from database import create_tables, test_connection
 from services.user_service import UserService
+from services.product_service import ProductService
+from agents.product_info_agent import product_info_agent
 
 # Load environment variables
 load_dotenv()
@@ -84,6 +86,44 @@ class ToolIdentificationResponse(BaseModel):
     alternatives: List[Dict[str, Any]]
     search_timestamp: str
     user_quota: Dict[str, Any]
+
+# Product recommendation models
+class ProductCreateRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: str = "other"
+    merchant: Optional[str] = None
+    original_price: Optional[float] = None
+    sale_price: Optional[float] = None
+    product_url: str
+    image_url: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    rating: Optional[float] = None
+    rating_count: Optional[int] = None
+    is_featured: bool = False
+    sort_order: Optional[int] = None
+
+class ProductUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    merchant: Optional[str] = None
+    original_price: Optional[float] = None
+    sale_price: Optional[float] = None
+    product_url: Optional[str] = None
+    image_url: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    rating: Optional[float] = None
+    rating_count: Optional[int] = None
+    is_featured: Optional[bool] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+class ProductURLRequest(BaseModel):
+    product_url: str
+    is_featured: bool = False
 
 # Database initialization
 @app.on_event("startup")
@@ -362,6 +402,453 @@ async def upgrade_membership(
         "membership": level,
         "expiry": user["membership_expiry"]
     }
+
+# Product recommendation endpoints
+
+@app.get("/api/products")
+async def get_products(
+    category: Optional[str] = None,
+    merchant: Optional[str] = None,
+    project_type: Optional[str] = None,
+    featured_only: bool = False,
+    search: Optional[str] = None
+):
+    """Get public product recommendations with search (no authentication required)"""
+    try:
+        products = ProductService.get_all_products(
+            include_inactive=False,
+            category=category,
+            merchant=merchant,
+            project_type=project_type,
+            featured_only=featured_only,
+            search=search
+        )
+        
+        return {
+            "success": True,
+            "products": products,
+            "total": len(products),
+            "filters": {
+                "category": category,
+                "merchant": merchant,
+                "project_type": project_type,
+                "search": search,
+                "featured_only": featured_only
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting products: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get products")
+
+@app.get("/api/products/categories")
+async def get_product_categories():
+    """Get available product categories"""
+    try:
+        categories = ProductService.get_categories()
+        return {
+            "success": True,
+            "categories": categories
+        }
+    except Exception as e:
+        logger.error(f"Error getting categories: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get categories")
+
+@app.get("/api/products/merchants")
+async def get_product_merchants():
+    """Get available product merchants"""
+    try:
+        merchants = ProductService.get_merchants()
+        return {
+            "success": True,
+            "merchants": merchants
+        }
+    except Exception as e:
+        logger.error(f"Error getting merchants: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get merchants")
+
+@app.get("/api/products/project-types")
+async def get_project_types():
+    """Get available DIY project types"""
+    try:
+        project_types = [
+            {"value": "woodworking", "label": "Woodworking"},
+            {"value": "plumbing", "label": "Plumbing"},
+            {"value": "electrical", "label": "Electrical"},
+            {"value": "automotive", "label": "Automotive"},
+            {"value": "metalworking", "label": "Metalworking"},
+            {"value": "painting", "label": "Painting"},
+            {"value": "general", "label": "General DIY"},
+            {"value": "outdoor", "label": "Outdoor & Garden"},
+            {"value": "home_improvement", "label": "Home Improvement"},
+            {"value": "crafts", "label": "Arts & Crafts"}
+        ]
+        return {
+            "success": True,
+            "project_types": project_types
+        }
+    except Exception as e:
+        logger.error(f"Error getting project types: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get project types")
+
+@app.post("/api/products/{product_id}/click")
+async def track_product_click(product_id: int):
+    """Track product click for analytics (public endpoint)"""
+    try:
+        success = ProductService.increment_click_count(product_id)
+        if success:
+            return {"success": True, "message": "Click tracked"}
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+    except Exception as e:
+        logger.error(f"Error tracking click: {e}")
+        return {"success": False, "message": "Click tracking failed"}
+
+@app.post("/api/products/{product_id}/view")
+async def track_product_view(product_id: int):
+    """Track product view for analytics (public endpoint)"""
+    try:
+        success = ProductService.increment_view_count(product_id)
+        if success:
+            return {"success": True, "message": "View tracked"}
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+    except Exception as e:
+        logger.error(f"Error tracking view: {e}")
+        return {"success": False, "message": "View tracking failed"}
+
+# Admin-only product management endpoints
+
+@app.get("/api/admin/products")
+async def admin_get_all_products(
+    include_inactive: bool = True,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all products for admin management"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        products = ProductService.get_all_products(include_inactive=include_inactive)
+        
+        return {
+            "success": True,
+            "products": products,
+            "total": len(products)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting admin products: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get products")
+
+@app.post("/api/admin/products/from-url")
+async def admin_create_product_from_url(
+    request: ProductURLRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new product using AI-powered URL analysis (admin only)"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        # Extract product information using AI agent
+        logger.info(f"Extracting product info from URL using AI: {request.product_url}")
+        
+        # Create agent task
+        from core.agent_base import AgentTask
+        task = AgentTask(
+            task_id=f"product_extract_{user_id}_{datetime.utcnow().timestamp()}",
+            agent_name="product_info_extraction",
+            input_data={
+                "product_url": request.product_url
+            },
+            created_at=datetime.utcnow()
+        )
+        
+        # Execute AI agent
+        result = await product_info_agent.process_task(task)
+        
+        if not result.success:
+            logger.error(f"AI agent failed: {result.error}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to extract product information: {result.error}"
+            )
+        
+        scraped_data = result.data
+        if not scraped_data:
+            logger.error(f"AI agent returned no data for {request.product_url}")
+            raise HTTPException(
+                status_code=400, 
+                detail="Failed to extract any product information from the provided URL"
+            )
+        
+        logger.info(f"AI agent extracted product info: {scraped_data.get('title', 'Unknown')}")
+        
+        # Ensure we have valid data, especially title
+        title = scraped_data.get('title') or 'Unknown Product'
+        if title == 'Unknown Product' or not title.strip():
+            # Try to create a better title from URL
+            from urllib.parse import urlparse
+            parsed_url = urlparse(request.product_url)
+            domain = parsed_url.netloc.replace('www.', '')
+            if 'amazon' in domain:
+                title = 'Amazon Product'
+            else:
+                title = f'Product from {domain}'
+        
+        # Create product with AI-extracted data
+        new_product = ProductService.create_product(
+            title=title,
+            description=scraped_data.get('description') or f'Product available from {urlparse(request.product_url).netloc}',
+            category=scraped_data.get('category') or 'other',
+            merchant=scraped_data.get('merchant') or ProductService._detect_merchant_from_url(request.product_url),
+            original_price=scraped_data.get('original_price'),
+            sale_price=scraped_data.get('sale_price'),
+            product_url=request.product_url,  # Always preserve original URL for affiliate links
+            image_url=scraped_data.get('image_url'),
+            brand=scraped_data.get('brand'),
+            model=scraped_data.get('model'),
+            rating=scraped_data.get('rating'),
+            rating_count=scraped_data.get('rating_count'),
+            is_featured=request.is_featured,
+            project_types=scraped_data.get('project_types') or ['general'],
+            created_by=user_id
+        )
+        
+        if new_product:
+            return {
+                "success": True,
+                "product": new_product,
+                "scraped_data": scraped_data,
+                "message": f"Product created successfully using {scraped_data.get('extraction_method', 'ai')} extraction",
+                "extraction_method": scraped_data.get('extraction_method', 'ai'),
+                "extraction_details": {
+                    "title_extracted": scraped_data.get('title') is not None and scraped_data.get('title') != 'Unknown Product',
+                    "price_extracted": scraped_data.get('sale_price') is not None or scraped_data.get('original_price') is not None,
+                    "image_extracted": scraped_data.get('image_url') is not None,
+                    "brand_extracted": scraped_data.get('brand') is not None
+                }
+            }
+        else:
+            logger.error(f"Product creation failed for URL: {request.product_url}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to create product from URL. The AI agent may have encountered issues extracting product information from this page."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating product from URL: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create product from URL: {str(e)}")
+
+@app.post("/api/admin/products")
+async def admin_create_product(
+    product: ProductCreateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new product (admin only)"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        # Create product
+        new_product = ProductService.create_product(
+            title=product.title,
+            description=product.description,
+            category=product.category,
+            merchant=product.merchant,
+            original_price=product.original_price,
+            sale_price=product.sale_price,
+            product_url=product.product_url,
+            image_url=product.image_url,
+            brand=product.brand,
+            model=product.model,
+            rating=product.rating,
+            rating_count=product.rating_count,
+            is_featured=product.is_featured,
+            created_by=user_id
+        )
+        
+        if new_product:
+            return {
+                "success": True,
+                "product": new_product,
+                "message": "Product created successfully"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create product")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create product")
+
+@app.get("/api/admin/products/{product_id}")
+async def admin_get_product(
+    product_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific product for admin editing"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        product = ProductService.get_product_by_id(product_id)
+        
+        if product:
+            return {
+                "success": True,
+                "product": product
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get product")
+
+@app.put("/api/admin/products/{product_id}")
+async def admin_update_product(
+    product_id: int,
+    product: ProductUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a product (admin only)"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        # Update product
+        updated_product = ProductService.update_product(
+            product_id=product_id,
+            title=product.title,
+            description=product.description,
+            category=product.category,
+            merchant=product.merchant,
+            original_price=product.original_price,
+            sale_price=product.sale_price,
+            product_url=product.product_url,
+            image_url=product.image_url,
+            brand=product.brand,
+            model=product.model,
+            rating=product.rating,
+            rating_count=product.rating_count,
+            is_featured=product.is_featured,
+            is_active=product.is_active,
+            sort_order=product.sort_order
+        )
+        
+        if updated_product:
+            return {
+                "success": True,
+                "product": updated_product,
+                "message": "Product updated successfully"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update product")
+
+@app.delete("/api/admin/products/{product_id}")
+async def admin_delete_product(
+    product_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a product (admin only)"""
+    try:
+        user_id = int(current_user.get("sub"))
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        success = ProductService.delete_product(product_id)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Product deleted successfully"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete product")
 
 # Original DIY analysis endpoint (kept for compatibility)
 @app.post("/analyze-project")

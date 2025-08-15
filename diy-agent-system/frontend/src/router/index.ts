@@ -41,6 +41,18 @@ const routes = [
     meta: { title: '个人中心', requiresAuth: true }
   },
   {
+    path: '/admin/products',
+    name: 'AdminProductManagement',
+    component: () => import('@/views/AdminProductManagement.vue'),
+    meta: { title: '产品推荐管理', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/products',
+    name: 'ProductRecommendations',
+    component: () => import('@/views/ProductRecommendations.vue'),
+    meta: { title: '产品推荐' }
+  },
+  {
     path: '/projects',
     name: 'Projects',
     component: Projects,
@@ -68,6 +80,23 @@ router.beforeEach((to, from, next) => {
     if (!token) {
       next({ name: 'Login', query: { redirect: to.fullPath } })
       return
+    }
+    
+    // Check if route requires admin access
+    if (to.meta.requiresAdmin) {
+      const userInfoStr = localStorage.getItem('user_info')
+      if (userInfoStr) {
+        const userInfo = JSON.parse(userInfoStr)
+        if (userInfo.membership_level !== 'admin') {
+          // Redirect non-admin users to dashboard
+          next({ name: 'Dashboard' })
+          return
+        }
+      } else {
+        // No user info, redirect to login
+        next({ name: 'Login', query: { redirect: to.fullPath } })
+        return
+      }
     }
   }
   

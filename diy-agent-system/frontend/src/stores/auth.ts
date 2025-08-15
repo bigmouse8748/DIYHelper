@@ -8,7 +8,7 @@ import { login, register, getCurrentUser } from '@/api/toolIdentification'
 export interface User {
   username: string
   email: string
-  membership_level: 'free' | 'premium' | 'pro'
+  membership_level: 'free' | 'premium' | 'pro' | 'admin'
   dailyUsed?: number
   dailyLimit?: number
 }
@@ -130,7 +130,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (user.value) {
       user.value.dailyUsed = quotaInfo.used
       user.value.dailyLimit = quotaInfo.limit
-      user.value.membership_level = quotaInfo.membership as 'free' | 'premium' | 'pro'
+      user.value.membership_level = quotaInfo.membership as 'free' | 'premium' | 'pro' | 'admin'
       localStorage.setItem('user_info', JSON.stringify(user.value))
     }
   }

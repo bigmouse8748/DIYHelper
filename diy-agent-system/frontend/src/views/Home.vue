@@ -40,7 +40,7 @@
           </template>
           <p class="feature-description">{{ $t('home.features.diyAssistant.description') }}</p>
           <div class="feature-benefits">
-            <div v-for="benefit in $t('home.features.diyAssistant.benefits')" :key="benefit" class="benefit-item">
+            <div v-for="(benefit, index) in diyBenefits" :key="index" class="benefit-item">
               <el-icon color="#67c23a"><Check /></el-icon>
               <span>{{ benefit }}</span>
             </div>
@@ -56,6 +56,31 @@
           </div>
         </el-card>
 
+        <!-- Product Recommendations -->
+        <el-card class="feature-card" shadow="hover">
+          <template #header>
+            <div class="feature-header">
+              <el-icon :size="32" color="#67c23a"><ShoppingBag /></el-icon>
+              <h3>{{ $t('home.features.productRecommendations.title') }}</h3>
+            </div>
+          </template>
+          <p class="feature-description">{{ $t('home.features.productRecommendations.description') }}</p>
+          <div class="feature-benefits">
+            <div v-for="(benefit, index) in productBenefits" :key="index" class="benefit-item">
+              <el-icon color="#67c23a"><Check /></el-icon>
+              <span>{{ benefit }}</span>
+            </div>
+          </div>
+          <div class="feature-action">
+            <el-button 
+              type="primary" 
+              @click="handleFeatureClick('products')"
+            >
+              {{ $t('home.features.tryNow') }}
+            </el-button>
+          </div>
+        </el-card>
+
         <!-- Tool Identification -->
         <el-card class="feature-card" shadow="hover">
           <template #header>
@@ -66,7 +91,7 @@
           </template>
           <p class="feature-description">{{ $t('home.features.toolIdentification.description') }}</p>
           <div class="feature-benefits">
-            <div v-for="benefit in $t('home.features.toolIdentification.benefits')" :key="benefit" class="benefit-item">
+            <div v-for="(benefit, index) in toolBenefits" :key="index" class="benefit-item">
               <el-icon color="#67c23a"><Check /></el-icon>
               <span>{{ benefit }}</span>
             </div>
@@ -97,7 +122,7 @@
             <h4>{{ $t('home.examples.diy.title') }}</h4>
             <p>{{ $t('home.examples.diy.description') }}</p>
             <div class="example-features">
-              <el-tag v-for="feature in $t('home.examples.diy.features')" :key="feature" size="small">
+              <el-tag v-for="(feature, index) in diyExampleFeatures" :key="index" size="small">
                 {{ feature }}
               </el-tag>
             </div>
@@ -113,7 +138,7 @@
             <h4>{{ $t('home.examples.tool.title') }}</h4>
             <p>{{ $t('home.examples.tool.description') }}</p>
             <div class="example-features">
-              <el-tag v-for="feature in $t('home.examples.tool.features')" :key="feature" size="small" type="warning">
+              <el-tag v-for="(feature, index) in toolExampleFeatures" :key="index" size="small" type="warning">
                 {{ feature }}
               </el-tag>
             </div>
@@ -161,15 +186,77 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { MagicStick, Search, Check } from '@element-plus/icons-vue'
+import { MagicStick, Search, Check, ShoppingBag } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const { t } = useI18n()
 const authStore = useAuthStore()
+
+// Computed properties for arrays to avoid i18n issues
+const diyBenefits = computed(() => {
+  const locale = t('home.features.diyAssistant.benefits')
+  if (Array.isArray(locale)) {
+    return locale
+  }
+  // Fallback if i18n doesn't work properly
+  return [
+    'AI-powered project analysis',
+    'Smart material recommendations', 
+    'Real-time product pricing',
+    'Step-by-step guidance'
+  ]
+})
+
+const toolBenefits = computed(() => {
+  const locale = t('home.features.toolIdentification.benefits')
+  if (Array.isArray(locale)) {
+    return locale
+  }
+  // Fallback
+  return [
+    'Instant tool recognition',
+    'Detailed specifications',
+    'Price comparison',
+    'Shopping recommendations'
+  ]
+})
+
+const productBenefits = computed(() => {
+  const locale = t('home.features.productRecommendations.benefits')
+  if (Array.isArray(locale)) {
+    return locale
+  }
+  // Fallback
+  return [
+    'Curated product selection',
+    'Competitive pricing',
+    'Multiple merchant options',
+    'No login required'
+  ]
+})
+
+const diyExampleFeatures = computed(() => {
+  const locale = t('home.examples.diy.features')
+  if (Array.isArray(locale)) {
+    return locale
+  }
+  // Fallback
+  return ['Material List', 'Tool Recommendations', 'Safety Tips', 'Step-by-Step Guide']
+})
+
+const toolExampleFeatures = computed(() => {
+  const locale = t('home.examples.tool.features')
+  if (Array.isArray(locale)) {
+    return locale
+  }
+  // Fallback
+  return ['Brand Recognition', 'Model Details', 'Price Comparison', 'Alternative Options']
+})
 
 const goToLogin = () => {
   router.push('/login')
@@ -191,7 +278,16 @@ const goToToolIdentification = () => {
   router.push('/tool-identification')
 }
 
-const handleFeatureClick = (feature: 'diy' | 'tool') => {
+const goToProducts = () => {
+  router.push('/products')
+}
+
+const handleFeatureClick = (feature: 'diy' | 'tool' | 'products') => {
+  if (feature === 'products') {
+    goToProducts()
+    return
+  }
+  
   if (!authStore.isAuthenticated) {
     ElMessage.info(t('home.messages.loginRequired'))
     return
@@ -263,8 +359,8 @@ const handleFeatureClick = (feature: 'diy' | 'tool') => {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
   margin-bottom: 40px;
 }
 

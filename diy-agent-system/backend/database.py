@@ -21,14 +21,21 @@ DATABASE_URL = os.getenv(
 
 logger.info(f"Database URL configured: {DATABASE_URL.replace(os.getenv('DB_PASSWORD', ''), '***')}")
 
-# Create engine
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=3600,
-    echo=False  # Set to True for SQL debugging
-)
+# Create engine with different settings for SQLite vs PostgreSQL
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        echo=False,  # Set to True for SQL debugging
+        connect_args={"check_same_thread": False}  # SQLite specific
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_recycle=3600,
+        echo=False  # Set to True for SQL debugging
+    )
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -38,6 +45,7 @@ def create_tables():
     logger.info("Creating database tables...")
     # Import here to avoid circular imports
     from models.user_models import Base
+    from models.product_models import ProductRecommendation  # Import to register table
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully")
 
@@ -68,9 +76,14 @@ def test_connection():
     try:
         from sqlalchemy import text
         with engine.connect() as connection:
-            result = connection.execute(text("SELECT version();"))
-            version = result.fetchone()[0]
-            logger.info(f"Database connection successful. PostgreSQL version: {version}")
+            if DATABASE_URL.startswith("sqlite"):
+                result = connection.execute(text("SELECT sqlite_version();"))
+                version = result.fetchone()[0]
+                logger.info(f"Database connection successful. SQLite version: {version}")
+            else:
+                result = connection.execute(text("SELECT version();"))
+                version = result.fetchone()[0]
+                logger.info(f"Database connection successful. PostgreSQL version: {version}")
             return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")

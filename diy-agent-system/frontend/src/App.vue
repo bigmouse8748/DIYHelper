@@ -11,6 +11,7 @@
           <div class="nav-right">
             <nav class="nav-menu">
               <router-link to="/" class="nav-link">{{ $t('nav.home') }}</router-link>
+              <router-link to="/products" class="nav-link">{{ $t('nav.products') }}</router-link>
               <router-link v-if="authStore.isAuthenticated" to="/diy-assistant" class="nav-link">{{ $t('nav.diyAssistant') }}</router-link>
               <router-link v-if="authStore.isAuthenticated" to="/tool-identification" class="nav-link">{{ $t('nav.toolIdentification') }}</router-link>
               <router-link to="/about" class="nav-link">{{ $t('nav.about') }}</router-link>
@@ -30,6 +31,10 @@
                       <el-dropdown-item @click="goToDashboard">
                         <el-icon><User /></el-icon>
                         {{ $t('nav.dashboard') }}
+                      </el-dropdown-item>
+                      <el-dropdown-item v-if="authStore.currentUser?.membership_level === 'admin'" @click="goToAdminProducts">
+                        <el-icon><Setting /></el-icon>
+                        {{ $t('admin.products.title') }}
                       </el-dropdown-item>
                       <el-dropdown-item @click="handleLogout" divided>
                         <el-icon><SwitchButton /></el-icon>
@@ -68,7 +73,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Tools, User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
+import { Tools, User, ArrowDown, SwitchButton, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
@@ -93,6 +98,10 @@ const goToRegister = () => {
 
 const goToDashboard = () => {
   router.push('/dashboard')
+}
+
+const goToAdminProducts = () => {
+  router.push('/admin/products')
 }
 
 const handleLogout = () => {

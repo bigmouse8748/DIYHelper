@@ -2,6 +2,7 @@ export default {
   // 导航
   nav: {
     home: '首页',
+    products: '产品推荐',
     diyAssistant: 'DIY助手',
     toolIdentification: '工具识别',
     projects: '我的项目',
@@ -43,6 +44,17 @@ export default {
           '详细规格说明',
           '价格比较',
           '购物推荐'
+        ]
+      },
+      
+      productRecommendations: {
+        title: '产品推荐',
+        description: '浏览我们精心挑选的DIY工具和材料，来自可信商家的优惠价格',
+        benefits: [
+          '精选产品推荐',
+          '优惠价格保证',
+          '多家商户选择',
+          '无需登录访问'
         ]
       }
     },
@@ -269,7 +281,8 @@ export default {
     outOfStock: '无库存',
     viewProduct: '查看产品',
     viewDetails: '查看详情',
-    viewAll: '查看全部'
+    viewAll: '查看全部',
+    view: '视图'
   },
 
   // 工具识别
@@ -399,5 +412,120 @@ export default {
   // 页脚
   footer: {
     copyright: '© 2024 DIY智能助手。采用AI智能体架构构建'
+  },
+
+  // 管理员
+  admin: {
+    accessDenied: '需要管理员权限',
+    
+    products: {
+      title: '产品推荐管理',
+      subtitle: '管理推广产品链接和推荐',
+      addProduct: '添加产品',
+      addFromUrl: '从链接添加产品',
+      editProduct: '编辑产品',
+      productList: '产品列表',
+      filterByCategory: '按分类筛选',
+      filterByMerchant: '按商家筛选',
+      includeInactive: '包含未激活产品',
+      featured: '精选',
+      inactive: '未激活',
+      noProducts: '暂无产品',
+      addFirstProduct: '添加第一个产品',
+      create: '创建产品',
+      confirmDelete: '确定要删除此产品吗？',
+      views: '浏览量',
+      clicks: '点击量',
+      
+      form: {
+        pasteUrl: '粘贴产品链接',
+        urlDescription: '只需粘贴来自亚马逊、家得宝、劳氏或沃尔玛的任何产品链接，我们的系统会自动提取产品信息。',
+        title: '产品标题',
+        titlePlaceholder: '输入产品标题（如：德瓦特20V电钻）',
+        productUrl: '产品链接',
+        urlPlaceholder: 'https://www.amazon.com/产品链接 或其他商家链接',
+        urlHint: '支持亚马逊、家得宝、劳氏、沃尔玛推广链接',
+        category: '分类',
+        selectCategory: '选择分类',
+        merchant: '商家',
+        selectMerchant: '选择商家',
+        description: '描述',
+        descriptionPlaceholder: '可选的产品描述或特性',
+        originalPrice: '原价',
+        salePrice: '促销价',
+        rating: '评分',
+        brand: '品牌',
+        brandPlaceholder: '如：德瓦特、密尔沃基',
+        model: '型号',
+        modelPlaceholder: '如：DCD771C2',
+        imageUrl: '图片链接',
+        imageUrlPlaceholder: '产品图片链接（可选）',
+        isFeatured: '精选产品',
+        isActive: '激活产品',
+        featuredHint: '精选产品会优先显示在列表中'
+      },
+      
+      preview: {
+        title: '预览抓取信息',
+        button: '预览产品'
+      },
+      
+      table: {
+        title: '产品标题',
+        category: '分类',
+        merchant: '商家',
+        price: '价格',
+        analytics: '统计',
+        actions: '操作'
+      },
+      
+      validation: {
+        titleRequired: '产品标题为必填项',
+        titleLength: '标题长度必须在3-255个字符之间',
+        urlRequired: '产品链接为必填项',
+        urlInvalid: '请输入有效的链接地址'
+      },
+      
+      messages: {
+        createSuccess: '产品创建成功',
+        updateSuccess: '产品更新成功',
+        deleteSuccess: '产品删除成功',
+        previewSuccess: '产品信息抓取成功'
+      },
+      
+      errors: {
+        loadFailed: '加载产品失败',
+        createFailed: '创建产品失败',
+        updateFailed: '更新产品失败',
+        deleteFailed: '删除产品失败',
+        previewFailed: '抓取产品信息失败，请检查链接是否正确。'
+      }
+    }
+  },
+
+  // 产品推荐
+  products: {
+    title: '产品推荐',
+    subtitle: '精选DIY工具和材料推荐，价格实惠品质可靠',
+    featured: '精选',
+    noProducts: '暂无产品',
+    refresh: '刷新',
+    priceOnSite: '到商家查看价格',
+    buyNow: '访问商店',
+    loadMore: '加载更多',
+    
+    filters: {
+      all: '全部产品',
+      allMerchants: '全部商家',
+      allProjectTypes: '全部项目类型',
+      featuredOnly: '仅显示精选'
+    },
+    
+    gridView: '网格视图',
+    listView: '列表视图',
+    
+    errors: {
+      loadFailed: '加载产品失败'
+    }
   }
 }

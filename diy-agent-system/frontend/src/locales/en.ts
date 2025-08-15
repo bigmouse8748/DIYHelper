@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     home: 'Home',
+    products: 'Products',
     diyAssistant: 'DIY Assistant',
     toolIdentification: 'Tool ID',
     projects: 'My Projects',
@@ -43,6 +44,17 @@ export default {
           'Detailed specifications',
           'Price comparison',
           'Shopping recommendations'
+        ]
+      },
+      
+      productRecommendations: {
+        title: 'Product Recommendations',
+        description: 'Browse our curated selection of DIY tools and materials with competitive pricing from trusted retailers',
+        benefits: [
+          'Curated product selection',
+          'Competitive pricing',
+          'Multiple merchant options',
+          'No login required'
         ]
       }
     },
@@ -269,7 +281,8 @@ export default {
     outOfStock: 'Out of Stock',
     viewProduct: 'View Product',
     viewDetails: 'View Details',
-    viewAll: 'View All'
+    viewAll: 'View All',
+    view: 'View'
   },
   
   // Tool Identification
@@ -399,5 +412,124 @@ export default {
   // Footer
   footer: {
     copyright: '© 2024 DIY Smart Assistant. Built with AI Agent Architecture'
+  },
+
+  // Admin
+  admin: {
+    accessDenied: 'Admin access required',
+    
+    products: {
+      title: 'Product Recommendations Management',
+      subtitle: 'Manage affiliate product links and recommendations',
+      addProduct: 'Add Product',
+      addFromUrl: 'Add Product from URL',
+      editProduct: 'Edit Product',
+      productList: 'Product List',
+      filterByCategory: 'Filter by Category',
+      filterByMerchant: 'Filter by Merchant',
+      includeInactive: 'Include inactive products',
+      featured: 'Featured',
+      inactive: 'Inactive',
+      noProducts: 'No products found',
+      addFirstProduct: 'Add First Product',
+      create: 'Create Product',
+      confirmDelete: 'Are you sure you want to delete this product?',
+      views: 'Views',
+      clicks: 'Clicks',
+      
+      form: {
+        pasteUrl: 'Paste Product Link',
+        urlDescription: 'Simply paste any product URL from Amazon, Home Depot, Lowes, or Walmart. Our system will automatically extract product information.',
+        title: 'Product Title',
+        titlePlaceholder: 'Enter product title (e.g., DeWalt 20V Drill)',
+        productUrl: 'Product URL',
+        urlPlaceholder: 'https://www.amazon.com/product-link or any other retailer URL',
+        urlHint: 'Supports Amazon, Home Depot, Lowes, Walmart affiliate links',
+        category: 'Category',
+        selectCategory: 'Select Category',
+        merchant: 'Merchant',
+        selectMerchant: 'Select Merchant',
+        description: 'Description',
+        descriptionPlaceholder: 'Optional product description or features',
+        originalPrice: 'Original Price',
+        salePrice: 'Sale Price',
+        rating: 'Rating',
+        brand: 'Brand',
+        brandPlaceholder: 'e.g., DeWalt, Milwaukee',
+        model: 'Model',
+        modelPlaceholder: 'e.g., DCD771C2',
+        imageUrl: 'Image URL',
+        imageUrlPlaceholder: 'Product image URL (optional)',
+        isFeatured: 'Featured Product',
+        isActive: 'Active Product',
+        featuredHint: 'Featured products appear first in the list'
+      },
+      
+      preview: {
+        title: 'Preview Scraped Information',
+        button: 'Preview Product'
+      },
+      
+      table: {
+        title: 'Product Title',
+        category: 'Category',
+        merchant: 'Merchant',
+        price: 'Price',
+        analytics: 'Analytics',
+        actions: 'Actions'
+      },
+      
+      validation: {
+        titleRequired: 'Product title is required',
+        titleLength: 'Title must be 3-255 characters',
+        urlRequired: 'Product URL is required',
+        urlInvalid: 'Please enter a valid URL'
+      },
+      
+      messages: {
+        createSuccess: 'Product created successfully',
+        updateSuccess: 'Product updated successfully',
+        deleteSuccess: 'Product deleted successfully',
+        previewSuccess: 'Product information scraped successfully'
+      },
+      
+      errors: {
+        loadFailed: 'Failed to load products',
+        createFailed: 'Failed to create product',
+        updateFailed: 'Failed to update product',
+        deleteFailed: 'Failed to delete product',
+        previewFailed: 'Failed to scrape product information. Please check the URL.'
+      }
+    }
+  },
+
+  // Products
+  products: {
+    title: 'Product Recommendations',
+    subtitle: 'Curated DIY tools and materials recommendations with competitive pricing',
+    featured: 'Featured',
+    noProducts: 'No products available',
+    refresh: 'Refresh',
+    priceOnSite: 'See price on site',
+    buyNow: 'Visit Store',
+    loadMore: 'Load More',
+    
+    filters: {
+      all: 'All Products',
+      allMerchants: 'All Merchants', 
+      allProjectTypes: 'All Project Types',
+      featuredOnly: 'Featured Only',
+      search: 'Search products...',
+      searchPlaceholder: 'Search by name, brand, or description',
+      clearSearch: 'Clear search',
+      searchResults: 'Search Results'
+    },
+    
+    gridView: 'Grid View',
+    listView: 'List View',
+    
+    errors: {
+      loadFailed: 'Failed to load products'
+    }
   }
 }
