@@ -3,7 +3,7 @@
  */
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://api.cheasydiy.com'
 
 // Create axios instance with auth interceptor
 const apiClient = axios.create({

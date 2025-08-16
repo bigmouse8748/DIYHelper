@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { AnalysisResult, AnalysisRequest } from '@/types'
 
 // 在开发环境使用相对路径通过代理，生产环境使用环境变量
-const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8001')
+const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://api.cheasydiy.com')
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
