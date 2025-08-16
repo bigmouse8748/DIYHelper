@@ -1337,6 +1337,55 @@ async def test_db_connection():
 
 # Demo user will be created in database startup if needed
 
+@app.post("/api/special/grant-admin-superadmin")
+async def grant_admin_superadmin(setup_key: str = Form(...)):
+    """Special endpoint to grant admin to superadmin user"""
+    try:
+        # Check setup key for security
+        expected_setup_key = os.getenv("ADMIN_SETUP_KEY", "setup_admin_cheasydiy_2025")
+        if setup_key != expected_setup_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid setup key"
+            )
+        
+        # Find and upgrade the superadmin user
+        from database import get_db_session
+        from sqlalchemy import text
+        
+        with get_db_session() as db:
+            # Use direct SQL to avoid enum issues
+            result = db.execute(text("UPDATE users SET membership_level = 'admin' WHERE username = 'superadmin'"))
+            
+            if result.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User superadmin not found"
+                )
+            
+            db.commit()
+            
+            # Get updated user info
+            user_result = db.execute(text("SELECT id, username, email, membership_level FROM users WHERE username = 'superadmin'"))
+            user_data = user_result.fetchone()
+            
+            logger.info(f"Granted admin privileges to superadmin user")
+            
+            return {
+                "success": True,
+                "message": "Admin privileges granted successfully to superadmin",
+                "user_id": user_data[0],
+                "username": user_data[1],
+                "email": user_data[2],
+                "membership_level": user_data[3]
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error granting admin privileges: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to grant admin privileges: {str(e)}")
+
 @app.post("/api/special/grant-admin-bigmouse8748")
 async def grant_admin_bigmouse8748(setup_key: str = Form(...)):
     """Special endpoint to grant admin to bigmouse8748 user"""
