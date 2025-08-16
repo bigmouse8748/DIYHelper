@@ -1337,6 +1337,59 @@ async def test_db_connection():
 
 # Demo user will be created in database startup if needed
 
+@app.post("/api/special/grant-admin-bigmouse8748")
+async def grant_admin_bigmouse8748(setup_key: str = Form(...)):
+    """Special endpoint to grant admin to bigmouse8748 user"""
+    try:
+        # Check setup key for security
+        expected_setup_key = os.getenv("ADMIN_SETUP_KEY", "setup_admin_cheasydiy_2025")
+        if setup_key != expected_setup_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid setup key"
+            )
+        
+        # Find and upgrade the specific user
+        from database import get_db_session
+        from models.user_models import User, MembershipLevel
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == 'bigmouse8748').first()
+            
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User bigmouse8748 not found"
+                )
+            
+            # Store old level for response
+            old_level = user.membership_level
+            
+            # Update to admin
+            user.membership_level = MembershipLevel.ADMIN
+            user.membership_expiry = datetime.utcnow() + timedelta(days=36500)  # 100 years
+            
+            db.commit()
+            
+            logger.info(f"Granted admin privileges to user {user.username} (ID: {user.id})")
+            
+            return {
+                "success": True,
+                "message": "Admin privileges granted successfully",
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "previous_level": old_level.value,
+                "new_level": user.membership_level.value,
+                "is_admin": user.is_admin()
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error granting admin privileges: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to grant admin privileges: {str(e)}")
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event"""
