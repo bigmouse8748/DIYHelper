@@ -1365,9 +1365,9 @@ async def grant_admin_bigmouse8748(setup_key: str = Form(...)):
             # Store old level for response
             old_level = user.membership_level
             
-            # Update to admin
-            user.membership_level = MembershipLevel.ADMIN
-            user.membership_expiry = datetime.utcnow() + timedelta(days=36500)  # 100 years
+            # Update to admin using raw SQL to avoid enum conversion issues
+            from sqlalchemy import text
+            db.execute(text("UPDATE users SET membership_level = 'admin' WHERE username = 'bigmouse8748'"))
             
             db.commit()
             
