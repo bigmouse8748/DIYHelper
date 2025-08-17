@@ -1,8 +1,8 @@
 import axios from 'axios'
 import type { AnalysisResult, AnalysisRequest } from '@/types'
 
-// 在开发环境使用相对路径通过代理，生产环境使用环境变量
-const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8001')
+// Use backend URL directly since proxy isn't working on port 3003
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8002' : (import.meta.env.VITE_API_URL || 'http://localhost:8002')
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

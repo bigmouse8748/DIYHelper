@@ -36,6 +36,10 @@
                         <el-icon><Setting /></el-icon>
                         {{ $t('admin.products.title') }}
                       </el-dropdown-item>
+                      <el-dropdown-item v-if="authStore.currentUser?.membership_level === 'admin'" @click="goToAdminUsers">
+                        <el-icon><User /></el-icon>
+                        {{ $t('admin.users.title') }}
+                      </el-dropdown-item>
                       <el-dropdown-item @click="handleLogout" divided>
                         <el-icon><SwitchButton /></el-icon>
                         {{ $t('auth.logout') }}
@@ -102,6 +106,10 @@ const goToDashboard = () => {
 
 const goToAdminProducts = () => {
   router.push('/admin/products')
+}
+
+const goToAdminUsers = () => {
+  router.push('/admin/users')
 }
 
 const handleLogout = () => {

@@ -4,6 +4,7 @@ Enhanced DIY Agent System with Tool Identification and User Management
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from typing import List, Dict, Any, Optional
 import logging
@@ -47,7 +48,14 @@ app = FastAPI(
 )
 
 # CORS configuration - read from environment variable
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:5173").split(",")
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:3004",
+    "http://localhost:5173"
+]
 logger.info(f"CORS origins configured: {cors_origins}")
 
 app.add_middleware(
@@ -167,7 +175,7 @@ async def register(user: UserRegister):
         
         # Create access token
         access_token = create_access_token(
-            data={"sub": str(new_user["id"]), "email": new_user["email"], "username": new_user["username"]},
+            data={"sub": new_user["username"], "email": new_user["email"], "username": new_user["username"]},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         
@@ -203,7 +211,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         
         # Create access token
         access_token = create_access_token(
-            data={"sub": str(user["id"]), "email": user["email"], "username": user["username"]},
+            data={"sub": user["username"], "email": user["email"], "username": user["username"]},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         
@@ -228,20 +236,20 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     """Get current user information"""
     try:
-        user_id = int(current_user.get("sub"))  # JWT sub contains user ID
+        username = current_user.get("sub")  # JWT sub contains user ID
         
         # Get user data using session-safe method
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
             
             # Get quota information
-            quota_info = UserService.get_user_quota_info(user_id)
+            quota_info = UserService.get_user_quota_info(user.id)
             
             return {
                 "id": user.id,
@@ -266,11 +274,19 @@ async def identify_tool(
 ):
     """Identify tool from uploaded image"""
     try:
-        user_id = int(current_user.get("sub"))
-        username = current_user.get("username", f"user_{user_id}")
+        username = current_user.get("sub")
+        
+        # Get user from database to get user ID
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
         
         # Check daily quota
-        quota_info = UserService.get_user_quota_info(user_id)
+        quota_info = UserService.get_user_quota_info(user.id)
         if not quota_info["can_identify"]:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -278,7 +294,7 @@ async def identify_tool(
             )
         
         # Increment usage count
-        UserService.increment_daily_usage(user_id)
+        UserService.increment_daily_usage(user.id)
         
         # Read and encode image
         image_content = await image.read()
@@ -307,7 +323,7 @@ async def identify_tool(
         # save_identification_history(username, result.data)
         
         # Get updated quota after increment
-        updated_quota = UserService.get_user_quota_info(user_id)
+        updated_quota = UserService.get_user_quota_info(user.id)
         
         # Prepare response
         response_data = result.data
@@ -332,8 +348,7 @@ async def get_identification_history(
 ):
     """Get user's identification history"""
     try:
-        user_id = int(current_user.get("sub"))
-        username = current_user.get("username", f"user_{user_id}")
+        username = current_user.get("sub")
         
         # TODO: Implement actual identification history storage
         # For now, return empty history
@@ -344,7 +359,7 @@ async def get_identification_history(
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             membership = user.membership_level.value if user else "free"
         
         # Filter based on membership (free users only see last 7 days)
@@ -382,17 +397,23 @@ async def upgrade_membership(
     current_user: dict = Depends(get_current_user)
 ):
     """Upgrade user membership"""
-    user_id = int(current_user.get("sub"))
-    user = UserService.get_user_by_id(user_id)
+    username = current_user.get("sub")
     
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Get user from database
+    from database import get_db_session
+    from models.user_models import User
+    
+    with get_db_session() as db:
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    
     
     if level not in ["premium", "pro", "admin"]:
         raise HTTPException(status_code=400, detail="Invalid membership level")
     
     # Mock payment processing - upgrade membership
-    success = UserService.upgrade_membership(user_id, level, days=30)
+    success = UserService.upgrade_membership(user.id, level, days=30)
     
     if not success:
         raise HTTPException(status_code=500, detail="Failed to upgrade membership")
@@ -516,6 +537,502 @@ async def track_product_view(product_id: int):
         logger.error(f"Error tracking view: {e}")
         return {"success": False, "message": "View tracking failed"}
 
+# Admin-only user management endpoints
+
+@app.get("/api/admin/users")
+async def admin_get_all_users(
+    page: int = 1,
+    page_size: int = 20,
+    search: Optional[str] = None,
+    membership: Optional[str] = None,
+    status: Optional[str] = None,
+    include_inactive: bool = True,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all users for admin management"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User, MembershipLevel
+        from sqlalchemy import and_, or_, func, desc
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Build query
+            query = db.query(User)
+            
+            # Apply filters
+            if not include_inactive:
+                query = query.filter(User.is_active == True)
+            
+            if membership:
+                query = query.filter(User.membership_level == MembershipLevel(membership))
+            
+            if status:
+                is_active = status == 'active'
+                query = query.filter(User.is_active == is_active)
+            
+            if search:
+                search_term = f"%{search}%"
+                query = query.filter(
+                    or_(
+                        User.username.ilike(search_term),
+                        User.email.ilike(search_term)
+                    )
+                )
+            
+            # Get total count
+            total = query.count()
+            
+            # Apply pagination
+            users = query.order_by(desc(User.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+            
+            # Format user data
+            user_list = []
+            for u in users:
+                # Get quota info
+                quota_info = UserService.get_user_quota_info(u.id)
+                
+                user_list.append({
+                    "id": u.id,
+                    "username": u.username,
+                    "email": u.email,
+                    "membership_level": u.membership_level.value,
+                    "is_active": u.is_active,
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                    "last_login": u.last_login.isoformat() if u.last_login else None,
+                    "daily_identifications": quota_info["used"],
+                    "daily_limit": quota_info["limit"]
+                })
+            
+            return {
+                "success": True,
+                "users": user_list,
+                "total": total,
+                "page": page,
+                "page_size": page_size
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting admin users: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get users")
+
+@app.get("/api/admin/users/stats")
+async def admin_get_user_stats(current_user: dict = Depends(get_current_user)):
+    """Get user statistics for admin dashboard"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User, MembershipLevel
+        from sqlalchemy import func, and_
+        from datetime import datetime, timedelta
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get statistics
+            total_users = db.query(func.count(User.id)).scalar()
+            active_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+            premium_users = db.query(func.count(User.id)).filter(
+                User.membership_level.in_([MembershipLevel.PREMIUM, MembershipLevel.PRO, MembershipLevel.ADMIN])
+            ).scalar()
+            
+            # Today's registrations
+            today = datetime.utcnow().date()
+            today_start = datetime.combine(today, datetime.min.time())
+            today_registrations = db.query(func.count(User.id)).filter(
+                User.created_at >= today_start
+            ).scalar()
+            
+            return {
+                "success": True,
+                "stats": {
+                    "total": total_users,
+                    "active": active_users,
+                    "premium": premium_users,
+                    "todayRegistrations": today_registrations
+                }
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting user stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user stats")
+
+class AdminCreateUserRequest(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    membership_level: str = "free"
+    is_active: bool = True
+
+@app.post("/api/admin/users")
+async def admin_create_user(
+    user_data: AdminCreateUserRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new user (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            admin_user_id = user.id  # Get the ID before session closes
+        
+        # Create user
+        new_user = UserService.create_user(user_data.email, user_data.username, user_data.password)
+        if not new_user:
+            raise HTTPException(
+                status_code=400,
+                detail="Username or email already exists"
+            )
+        
+        logger.info(f"Admin {admin_user_id} created user {new_user['id']} ({user_data.username})")
+        
+        return {
+            "success": True,
+            "message": "User created successfully",
+            "user_id": new_user["id"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+class AdminUpdateUserRequest(BaseModel):
+    username: str
+    email: EmailStr
+    membership_level: str
+    is_active: bool
+
+@app.put("/api/admin/users/{target_user_id}")
+async def admin_update_user(
+    target_user_id: int,
+    user_data: AdminUpdateUserRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a user (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User, MembershipLevel
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get target user
+            target_user = db.query(User).filter(User.id == target_user_id).first()
+            if not target_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Update user fields
+            target_user.username = user_data.username
+            target_user.email = user_data.email
+            target_user.membership_level = MembershipLevel(user_data.membership_level)
+            target_user.is_active = user_data.is_active
+            
+            db.commit()
+            
+            logger.info(f"Admin {user.id} updated user {target_user_id}")
+            
+            return {
+                "success": True,
+                "message": "User updated successfully"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user")
+
+@app.delete("/api/admin/users/{target_user_id}")
+async def admin_delete_user(
+    target_user_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a user (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get target user
+            target_user = db.query(User).filter(User.id == target_user_id).first()
+            if not target_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Prevent self-deletion
+            if target_user_id == user.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot delete your own account"
+                )
+            
+            # Delete user
+            db.delete(target_user)
+            db.commit()
+            
+            logger.info(f"Admin {user.id} deleted user {target_user_id}")
+            
+            return {
+                "success": True,
+                "message": "User deleted successfully"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete user")
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+@app.post("/api/admin/users/{target_user_id}/reset-password")
+async def admin_reset_user_password(
+    target_user_id: int,
+    password_data: ResetPasswordRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Reset user password (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get target user
+            target_user = db.query(User).filter(User.id == target_user_id).first()
+            if not target_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Update password
+            target_user.password_hash = get_password_hash(password_data.new_password)
+            db.commit()
+            
+            logger.info(f"Admin {user.id} reset password for user {target_user_id}")
+            
+            return {
+                "success": True,
+                "message": "Password reset successfully"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting password: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset password")
+
+@app.post("/api/admin/users/{target_user_id}/toggle-status")
+async def admin_toggle_user_status(
+    target_user_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle user active status (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get target user
+            target_user = db.query(User).filter(User.id == target_user_id).first()
+            if not target_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Prevent deactivating own account
+            if target_user_id == user.id and target_user.is_active:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot deactivate your own account"
+                )
+            
+            # Toggle status
+            target_user.is_active = not target_user.is_active
+            db.commit()
+            
+            action = "activated" if target_user.is_active else "deactivated"
+            logger.info(f"Admin {user.id} {action} user {target_user_id}")
+            
+            return {
+                "success": True,
+                "message": f"User {action} successfully",
+                "is_active": target_user.is_active
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling user status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to toggle user status")
+
+@app.post("/api/admin/users/{target_user_id}/force-logout")
+async def admin_force_user_logout(
+    target_user_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Force user logout (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get target user
+            target_user = db.query(User).filter(User.id == target_user_id).first()
+            if not target_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # TODO: Implement actual session invalidation logic
+            # For now, just log the action
+            logger.info(f"Admin {user.id} forced logout for user {target_user_id}")
+            
+            return {
+                "success": True,
+                "message": "User forced logout successfully"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error forcing logout: {e}")
+        raise HTTPException(status_code=500, detail="Failed to force logout")
+
+@app.get("/api/admin/users/export")
+async def admin_export_users(current_user: dict = Depends(get_current_user)):
+    """Export users to CSV (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        from fastapi.responses import StreamingResponse
+        import csv
+        import io
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+            
+            # Get all users
+            users = db.query(User).all()
+            
+            # Create CSV content
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow([
+                'ID', 'Username', 'Email', 'Membership Level', 
+                'Is Active', 'Created At', 'Last Login'
+            ])
+            
+            # Write user data
+            for u in users:
+                writer.writerow([
+                    u.id,
+                    u.username,
+                    u.email,
+                    u.membership_level.value,
+                    u.is_active,
+                    u.created_at.isoformat() if u.created_at else '',
+                    u.last_login.isoformat() if u.last_login else ''
+                ])
+            
+            # Prepare response
+            output.seek(0)
+            
+            return StreamingResponse(
+                io.BytesIO(output.getvalue().encode('utf-8')),
+                media_type="text/csv",
+                headers={"Content-Disposition": "attachment; filename=users_export.csv"}
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting users: {e}")
+        raise HTTPException(status_code=500, detail="Failed to export users")
+
 # Admin-only product management endpoints
 
 @app.get("/api/admin/products")
@@ -525,14 +1042,14 @@ async def admin_get_all_products(
 ):
     """Get all products for admin management"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if user is admin
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             if not user or not user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -559,19 +1076,20 @@ async def admin_create_product_from_url(
 ):
     """Create a new product using AI-powered URL analysis (admin only)"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if user is admin
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             if not user or not user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Admin access required"
                 )
+            admin_user_id = user.id  # Get the ID before session closes
         
         # Extract product information using AI agent
         logger.info(f"Extracting product info from URL using AI: {request.product_url}")
@@ -579,7 +1097,7 @@ async def admin_create_product_from_url(
         # Create agent task
         from core.agent_base import AgentTask
         task = AgentTask(
-            task_id=f"product_extract_{user_id}_{datetime.utcnow().timestamp()}",
+            task_id=f"product_extract_{admin_user_id}_{datetime.utcnow().timestamp()}",
             agent_name="product_info_extraction",
             input_data={
                 "product_url": request.product_url
@@ -635,7 +1153,7 @@ async def admin_create_product_from_url(
             rating_count=scraped_data.get('rating_count'),
             is_featured=request.is_featured,
             project_types=scraped_data.get('project_types') or ['general'],
-            created_by=user_id
+            created_by=admin_user_id
         )
         
         if new_product:
@@ -672,19 +1190,20 @@ async def admin_create_product(
 ):
     """Create a new product (admin only)"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if user is admin
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             if not user or not user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Admin access required"
                 )
+            admin_user_id = user.id  # Get the ID before session closes
         
         # Create product
         new_product = ProductService.create_product(
@@ -701,7 +1220,7 @@ async def admin_create_product(
             rating=product.rating,
             rating_count=product.rating_count,
             is_featured=product.is_featured,
-            created_by=user_id
+            created_by=admin_user_id
         )
         
         if new_product:
@@ -726,14 +1245,14 @@ async def admin_get_product(
 ):
     """Get a specific product for admin editing"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if user is admin
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             if not user or not user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -764,14 +1283,14 @@ async def admin_update_product(
 ):
     """Update a product (admin only)"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if user is admin
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             if not user or not user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -820,14 +1339,14 @@ async def admin_delete_product(
 ):
     """Delete a product (admin only)"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if user is admin
         from database import get_db_session
         from models.user_models import User
         
         with get_db_session() as db:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.username == username).first()
             if not user or not user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -849,6 +1368,158 @@ async def admin_delete_product(
     except Exception as e:
         logger.error(f"Error deleting product: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete product")
+
+@app.post("/api/admin/products/{product_id}/upload-image")
+async def admin_upload_product_image(
+    product_id: int,
+    image: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload and update product image (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        # Validate image file
+        if not image.content_type.startswith('image/'):
+            raise HTTPException(
+                status_code=400,
+                detail="File must be an image"
+            )
+        
+        # Check file size (5MB limit)
+        max_size = 5 * 1024 * 1024  # 5MB
+        image_content = await image.read()
+        if len(image_content) > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail="Image file too large. Maximum size is 5MB"
+            )
+        
+        # Create uploads directory if it doesn't exist
+        upload_dir = os.path.join("uploads", "products")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename
+        import uuid
+        from pathlib import Path
+        file_extension = Path(image.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = os.path.join(upload_dir, unique_filename)
+        
+        # Save the image file
+        with open(file_path, "wb") as buffer:
+            buffer.write(image_content)
+        
+        # Create image URL (relative to the server)
+        image_url = f"/uploads/products/{unique_filename}"
+        
+        # Update product with new image URL
+        updated_product = ProductService.update_product(
+            product_id=product_id,
+            image_url=image_url
+        )
+        
+        if updated_product:
+            logger.info(f"Successfully uploaded image for product {product_id}: {image_url}")
+            return {
+                "success": True,
+                "message": "Image uploaded successfully",
+                "image_url": image_url,
+                "product": updated_product
+            }
+        else:
+            # Clean up the uploaded file if product update failed
+            try:
+                os.remove(file_path)
+            except:
+                pass
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading product image: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+@app.post("/api/admin/products/{product_id}/update-image-url")
+async def admin_update_product_image_url(
+    product_id: int,
+    image_url_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update product image URL (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        image_url = image_url_data.get('image_url', '').strip()
+        if not image_url:
+            raise HTTPException(
+                status_code=400,
+                detail="Image URL is required"
+            )
+        
+        # Validate URL format
+        import re
+        url_pattern = re.compile(
+            r'^https?://'  # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+            r'localhost|'  # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+            r'(?::\d+)?'  # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        
+        if not url_pattern.match(image_url):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid URL format"
+            )
+        
+        # Update product with new image URL
+        updated_product = ProductService.update_product(
+            product_id=product_id,
+            image_url=image_url
+        )
+        
+        if updated_product:
+            logger.info(f"Successfully updated image URL for product {product_id}: {image_url}")
+            return {
+                "success": True,
+                "message": "Image URL updated successfully",
+                "image_url": image_url,
+                "product": updated_product
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating product image URL: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update image URL: {str(e)}")
 
 # Original DIY analysis endpoint (kept for compatibility)
 @app.post("/analyze-project")
@@ -991,6 +1662,68 @@ async def analyze_project(
     except Exception as e:
         logger.error(f"Error analyzing project: {str(e)}")
         return {"success": False, "error": str(e)}
+
+# URL Scraping endpoint for enhanced price/image extraction
+@app.post("/api/admin/scrape-url")
+async def scrape_product_url(
+    url: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Scrape product information from any URL using enhanced scraping (admin only)"""
+    try:
+        username = current_user.get("sub")
+        
+        # Check if user is admin
+        from database import get_db_session
+        from models.user_models import User
+        
+        with get_db_session() as db:
+            user = db.query(User).filter(User.username == username).first()
+            if not user or not user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin access required"
+                )
+        
+        # Use enhanced price scraper to extract product information
+        from services.price_scraper import PriceScraper
+        
+        async with PriceScraper() as scraper:
+            scraped_data = await scraper.scrape_product_from_url(url)
+            
+            if scraped_data:
+                return {
+                    "success": True,
+                    "scraped_data": {
+                        "title": scraped_data.title,
+                        "price": scraped_data.price,
+                        "currency": scraped_data.currency,
+                        "image_url": scraped_data.image_url,
+                        "rating": scraped_data.rating,
+                        "retailer": scraped_data.retailer,
+                        "in_stock": scraped_data.in_stock,
+                        "url": scraped_data.url
+                    },
+                    "extraction_method": "enhanced_scraping",
+                    "extraction_details": {
+                        "title_extracted": scraped_data.title != "Unknown Product",
+                        "price_extracted": scraped_data.price > 0,
+                        "image_extracted": bool(scraped_data.image_url),
+                        "rating_extracted": scraped_data.rating > 0
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Failed to extract product information from the provided URL",
+                    "scraped_data": None
+                }
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error scraping URL {url}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to scrape URL: {str(e)}")
 
 # Helper functions
 
@@ -1146,14 +1879,14 @@ async def create_admin_user(
 ):
     """Create admin user - only accessible by existing admin"""
     try:
-        user_id = int(current_user.get("sub"))
+        username = current_user.get("sub")
         
         # Check if current user is admin
         from database import get_db_session
         from models.user_models import User, MembershipLevel
         
         with get_db_session() as db:
-            current_user_obj = db.query(User).filter(User.id == user_id).first()
+            current_user_obj = db.query(User).filter(User.username == username).first()
             if not current_user_obj or not current_user_obj.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -1443,6 +2176,12 @@ async def grant_admin_bigmouse8748(setup_key: str = Form(...)):
 async def shutdown_event():
     """Application shutdown event"""
     logger.info("Shutting down Enhanced DIY Agent System...")
+
+# Mount static files for uploaded images - MUST be at the end after all API routes
+upload_dir = "uploads"
+if not os.path.exists(upload_dir):
+    os.makedirs(upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 if __name__ == "__main__":
     import uvicorn

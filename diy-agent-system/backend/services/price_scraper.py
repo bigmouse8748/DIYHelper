@@ -61,6 +61,231 @@ class PriceScraper:
         if self.session:
             await self.session.close()
     
+    async def scrape_product_from_url(self, url: str) -> Optional[ProductPrice]:
+        """从给定URL抓取产品信息"""
+        try:
+            if not self.session:
+                connector = aiohttp.TCPConnector(limit=10)
+                self.session = aiohttp.ClientSession(connector=connector, headers=self.headers)
+            
+            async with self.session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as response:
+                if response.status == 200:
+                    html = await response.text()
+                    soup = BeautifulSoup(html, 'html.parser')
+                    
+                    # 提取产品信息
+                    title = self._extract_title(soup, url)
+                    price = self._extract_price(soup, url)
+                    image_url = self._extract_image(soup, url)
+                    rating = self._extract_rating(soup, url)
+                    
+                    # 确定零售商
+                    retailer = self._get_retailer_from_url(url)
+                    
+                    if title and price > 0:
+                        return ProductPrice(
+                            retailer=retailer,
+                            title=title,
+                            price=price,
+                            url=url,
+                            image_url=image_url,
+                            rating=rating,
+                            in_stock=True
+                        )
+                        
+        except Exception as e:
+            logger.warning(f"Failed to scrape {url}: {str(e)}")
+            
+        return None
+    
+    def _extract_title(self, soup: BeautifulSoup, url: str) -> str:
+        """提取产品标题"""
+        selectors = [
+            'h1#title span',  # Amazon
+            'h1[data-automation-id="product-title"]',  # Walmart
+            'h1.product-title',  # Home Depot/Lowes
+            'h1.pdp-product-name',  # Generic
+            'h1.product-name',
+            'h1',
+            '.product-title',
+            '.pdp-product-name',
+            '[data-testid="product-title"]'
+        ]
+        
+        for selector in selectors:
+            element = soup.select_one(selector)
+            if element:
+                title = element.get_text(strip=True)
+                if len(title) > 10:  # 确保标题有意义
+                    return title[:200]  # 限制长度
+        
+        # 如果都没找到，使用页面标题
+        title_tag = soup.find('title')
+        if title_tag:
+            return title_tag.get_text(strip=True)[:200]
+            
+        return "Unknown Product"
+    
+    def _extract_price(self, soup: BeautifulSoup, url: str) -> float:
+        """提取产品价格"""
+        selectors = [
+            '.a-price-whole',  # Amazon
+            '[data-automation-id="product-price"]',  # Walmart
+            '.price-current',  # Home Depot
+            '.sr-only',  # Screen reader price
+            '.price',
+            '.product-price',
+            '.current-price',
+            '[data-testid="price"]'
+        ]
+        
+        for selector in selectors:
+            elements = soup.select(selector)
+            for element in elements:
+                price_text = element.get_text(strip=True)
+                price = self._parse_price(price_text)
+                if price > 0:
+                    return price
+        
+        # 尝试在页面中查找价格模式
+        text = soup.get_text()
+        import re
+        price_patterns = [
+            r'\$[\d,]+\.?\d*',
+            r'USD\s*[\d,]+\.?\d*',
+            r'Price[:\s]*\$?[\d,]+\.?\d*'
+        ]
+        
+        for pattern in price_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches:
+                price = self._parse_price(match)
+                if 5 <= price <= 10000:  # 合理的价格范围
+                    return price
+                    
+        return 0.0
+    
+    def _extract_image(self, soup: BeautifulSoup, url: str) -> str:
+        """提取产品图片"""
+        selectors = [
+            '#landingImage',  # Amazon
+            '[data-automation-id="product-image"]',  # Walmart
+            '.product-image img',  # Generic
+            '.hero-image img',
+            '.main-image img',
+            '[data-testid="product-image"]',
+            'img[alt*="product"]',
+            'img[src*="product"]'
+        ]
+        
+        for selector in selectors:
+            element = soup.select_one(selector)
+            if element and element.get('src'):
+                img_url = element.get('src')
+                # 确保是完整URL
+                if img_url.startswith('//'):
+                    img_url = 'https:' + img_url
+                elif img_url.startswith('/'):
+                    from urllib.parse import urljoin
+                    img_url = urljoin(url, img_url)
+                
+                if img_url.startswith('http') and any(ext in img_url.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+                    return img_url
+        
+        return ""
+    
+    def _extract_rating(self, soup: BeautifulSoup, url: str) -> float:
+        """提取产品评分"""
+        selectors = [
+            '.a-icon-alt',  # Amazon
+            '[data-automation-id="reviews-section"]',
+            '.stars',
+            '.rating',
+            '[aria-label*="star"]'
+        ]
+        
+        for selector in selectors:
+            element = soup.select_one(selector)
+            if element:
+                text = element.get_text() or element.get('aria-label', '')
+                rating = self._parse_rating(text)
+                if rating > 0:
+                    return rating
+                    
+        return 0.0
+    
+    def _parse_price(self, price_text: str) -> float:
+        """解析价格文本"""
+        if not price_text:
+            return 0.0
+            
+        import re
+        # 移除非数字字符，保留小数点和逗号
+        price_clean = re.sub(r'[^\d.,]', '', price_text)
+        
+        # 处理逗号分隔的千位数
+        if ',' in price_clean and '.' in price_clean:
+            # 如果同时有逗号和点，假设逗号是千位分隔符
+            price_clean = price_clean.replace(',', '')
+        elif ',' in price_clean:
+            # 如果只有逗号，可能是小数点（欧洲格式）或千位分隔符
+            if price_clean.count(',') == 1 and len(price_clean.split(',')[1]) <= 2:
+                # 看起来是小数点
+                price_clean = price_clean.replace(',', '.')
+            else:
+                # 看起来是千位分隔符
+                price_clean = price_clean.replace(',', '')
+        
+        try:
+            return float(price_clean)
+        except ValueError:
+            return 0.0
+    
+    def _parse_rating(self, rating_text: str) -> float:
+        """解析评分文本"""
+        if not rating_text:
+            return 0.0
+            
+        import re
+        # 查找数字模式，如 "4.5 out of 5" 或 "4.5 stars"
+        pattern = r'(\d+\.?\d*)\s*(?:out\s*of\s*\d+|stars?|\/\d+)?'
+        match = re.search(pattern, rating_text.lower())
+        
+        if match:
+            try:
+                rating = float(match.group(1))
+                # 确保评分在合理范围内
+                if 0 <= rating <= 5:
+                    return rating
+                elif rating <= 100:  # 可能是百分制
+                    return rating / 20  # 转换为5分制
+            except ValueError:
+                pass
+                
+        return 0.0
+    
+    def _get_retailer_from_url(self, url: str) -> str:
+        """从URL确定零售商"""
+        url_lower = url.lower()
+        
+        if 'amazon.com' in url_lower:
+            return 'Amazon'
+        elif 'homedepot.com' in url_lower:
+            return 'Home Depot'
+        elif 'lowes.com' in url_lower:
+            return 'Lowes'
+        elif 'walmart.com' in url_lower:
+            return 'Walmart'
+        elif 'target.com' in url_lower:
+            return 'Target'
+        elif 'ebay.com' in url_lower:
+            return 'eBay'
+        else:
+            # 提取域名作为零售商名称
+            from urllib.parse import urlparse
+            domain = urlparse(url).netloc
+            return domain.replace('www.', '').title()
+    
     async def search_amazon(self, query: str, max_results: int = 5) -> List[ProductPrice]:
         """搜索Amazon产品价格"""
         try:

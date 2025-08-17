@@ -385,6 +385,8 @@ export default {
     free: '免费',
     premium: '高级',
     pro: '专业',
+    admin: '管理员',
+    undefined: '未知',
     level: '会员等级',
     upgrade: '升级',
     freeMembershipIncluded: '包含免费会员',
@@ -499,6 +501,102 @@ export default {
         updateFailed: '更新产品失败',
         deleteFailed: '删除产品失败',
         previewFailed: '抓取产品信息失败，请检查链接是否正确。'
+      },
+
+      addImage: '添加图片',
+      
+      imageUpload: {
+        title: '上传产品图片',
+        validation: {
+          urlRequired: '请输入图片链接',
+          urlInvalid: '请输入有效的链接'
+        }
+      }
+    },
+
+    users: {
+      title: '用户管理',
+      subtitle: '管理用户、权限和系统访问',
+      userCount: '用户总数',
+      activeUsers: '活跃用户',
+      premiumUsers: '付费用户',
+      adminUsers: '管理员',
+      addUser: '添加用户',
+      editUser: '编辑用户',
+      searchPlaceholder: '按用户名或邮箱搜索...',
+      
+      filters: {
+        all: '全部用户',
+        active: '仅活跃用户',
+        inactive: '仅非活跃用户',
+        premium: '付费会员',
+        admin: '管理员'
+      },
+      
+      actions: {
+        edit: '编辑',
+        delete: '删除',
+        resetPassword: '重置密码',
+        toggleStatus: '切换状态',
+        forceLogout: '强制登出',
+        export: '导出',
+        batchDelete: '批量删除',
+        batchActive: '批量激活',
+        batchInactive: '批量停用'
+      },
+      
+      form: {
+        username: '用户名',
+        email: '邮箱',
+        password: '密码',
+        confirmPassword: '确认密码',
+        membershipLevel: '会员等级',
+        membership: '会员等级',
+        isActive: '账户状态',
+        activeUser: '激活用户',
+        lastLogin: '最后登录',
+        createdAt: '创建时间',
+        user: '用户',
+        newPassword: '新密码'
+      },
+      
+      status: {
+        active: '活跃',
+        inactive: '非活跃',
+        never: '从未登录'
+      },
+      
+      membership: {
+        free: '免费用户',
+        premium: '付费用户',
+        admin: '管理员'
+      },
+      
+      confirmations: {
+        deleteUser: '确定要删除此用户吗？',
+        resetPassword: '确定要重置此用户的密码吗？',
+        toggleStatus: '确定要更改此用户的状态吗？',
+        forceLogout: '确定要强制此用户登出吗？',
+        batchDelete: '确定要删除所选的 {count} 个用户吗？'
+      },
+      
+      messages: {
+        userCreated: '用户创建成功',
+        userUpdated: '用户更新成功',
+        userDeleted: '用户删除成功',
+        passwordReset: '密码重置成功',
+        statusToggled: '用户状态更新成功',
+        logoutForced: '用户强制登出成功',
+        exportCompleted: '用户导出成功'
+      },
+      
+      errors: {
+        loadFailed: '加载用户失败',
+        createFailed: '创建用户失败',
+        updateFailed: '更新用户失败',
+        deleteFailed: '删除用户失败',
+        passwordResetFailed: '重置密码失败',
+        exportFailed: '导出用户失败'
       }
     }
   },

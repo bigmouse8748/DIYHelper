@@ -12,11 +12,8 @@ logger = logging.getLogger(__name__)
 # Database configuration
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    f"postgresql://{os.getenv('DB_USER', 'dbadmin')}:"
-    f"{os.getenv('DB_PASSWORD', 'ChEasyDiy2024!')}@"
-    f"{os.getenv('DB_HOST', 'localhost')}:"
-    f"{os.getenv('DB_PORT', '5432')}/"
-    f"{os.getenv('DB_NAME', 'cheasydiy')}"
+    # Use SQLite for local development
+    "sqlite:///./diy_assistant.db"
 )
 
 logger.info(f"Database URL configured: {DATABASE_URL.replace(os.getenv('DB_PASSWORD', ''), '***')}")

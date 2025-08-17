@@ -385,6 +385,8 @@ export default {
     free: 'Free',
     premium: 'Premium',
     pro: 'Pro',
+    admin: 'Administrator',
+    undefined: 'Unknown',
     level: 'Membership Level',
     upgrade: 'Upgrade',
     freeMembershipIncluded: 'Free Membership Included',
@@ -499,6 +501,102 @@ export default {
         updateFailed: 'Failed to update product',
         deleteFailed: 'Failed to delete product',
         previewFailed: 'Failed to scrape product information. Please check the URL.'
+      },
+
+      addImage: 'Add Image',
+      
+      imageUpload: {
+        title: 'Upload Product Image',
+        validation: {
+          urlRequired: 'Image URL is required',
+          urlInvalid: 'Please enter a valid URL'
+        }
+      }
+    },
+
+    users: {
+      title: 'User Management',
+      subtitle: 'Manage users, permissions, and system access',
+      userCount: 'Total Users',
+      activeUsers: 'Active Users',
+      premiumUsers: 'Premium Users',
+      adminUsers: 'Admin Users',
+      addUser: 'Add User',
+      editUser: 'Edit User',
+      searchPlaceholder: 'Search by username or email...',
+      
+      filters: {
+        all: 'All Users',
+        active: 'Active Only',
+        inactive: 'Inactive Only',
+        premium: 'Premium Members',
+        admin: 'Administrators'
+      },
+      
+      actions: {
+        edit: 'Edit',
+        delete: 'Delete',
+        resetPassword: 'Reset Password',
+        toggleStatus: 'Toggle Status',
+        forceLogout: 'Force Logout',
+        export: 'Export',
+        batchDelete: 'Batch Delete',
+        batchActive: 'Batch Activate',
+        batchInactive: 'Batch Deactivate'
+      },
+      
+      form: {
+        username: 'Username',
+        email: 'Email',
+        password: 'Password',
+        confirmPassword: 'Confirm Password',
+        membershipLevel: 'Membership Level',
+        membership: 'Membership Level',
+        isActive: 'Account Status',
+        activeUser: 'Active User',
+        lastLogin: 'Last Login',
+        createdAt: 'Created Date',
+        user: 'User',
+        newPassword: 'New Password'
+      },
+      
+      status: {
+        active: 'Active',
+        inactive: 'Inactive',
+        never: 'Never logged in'
+      },
+      
+      membership: {
+        free: 'Free',
+        premium: 'Premium',
+        admin: 'Administrator'
+      },
+      
+      confirmations: {
+        deleteUser: 'Are you sure you want to delete this user?',
+        resetPassword: 'Are you sure you want to reset this user\'s password?',
+        toggleStatus: 'Are you sure you want to change this user\'s status?',
+        forceLogout: 'Are you sure you want to force logout this user?',
+        batchDelete: 'Are you sure you want to delete {count} selected users?'
+      },
+      
+      messages: {
+        userCreated: 'User created successfully',
+        userUpdated: 'User updated successfully',
+        userDeleted: 'User deleted successfully',
+        passwordReset: 'Password reset successfully',
+        statusToggled: 'User status updated successfully',
+        logoutForced: 'User logout forced successfully',
+        exportCompleted: 'Users exported successfully'
+      },
+      
+      errors: {
+        loadFailed: 'Failed to load users',
+        createFailed: 'Failed to create user',
+        updateFailed: 'Failed to update user',
+        deleteFailed: 'Failed to delete user',
+        passwordResetFailed: 'Failed to reset password',
+        exportFailed: 'Failed to export users'
       }
     }
   },

@@ -4,7 +4,7 @@ User and membership related database models
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from passlib.context import CryptContext
 
@@ -30,6 +30,7 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
     daily_identifications = Column(Integer, default=0)
     last_reset = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(Boolean, default=True)  # New field for user active status
     
     def verify_password(self, password: str) -> bool:
         """Verify password against hash"""

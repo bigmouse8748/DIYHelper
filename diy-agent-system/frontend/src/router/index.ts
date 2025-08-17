@@ -47,6 +47,12 @@ const routes = [
     meta: { title: '产品推荐管理', requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/admin/users',
+    name: 'AdminUserManagement',
+    component: () => import('@/views/AdminUserManagement.vue'),
+    meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/products',
     name: 'ProductRecommendations',
     component: () => import('@/views/ProductRecommendations.vue'),

@@ -153,6 +153,117 @@
       </template>
     </el-dialog>
 
+    <!-- Image Upload Dialog -->
+    <el-dialog 
+      v-model="showImageUploadDialog" 
+      :title="$t('admin.products.imageUpload.title')"
+      width="500px"
+      @close="resetImageUpload"
+    >
+      <div class="image-upload-section">
+        <div v-if="selectedProduct" class="current-product-info">
+          <h4>{{ selectedProduct.title }}</h4>
+          <div class="current-image" v-if="selectedProduct.image_url">
+            <img :src="getImageUrl(selectedProduct.image_url)" :alt="selectedProduct.title" />
+            <p>{{ $t('admin.products.imageUpload.currentImage') }}</p>
+          </div>
+          <div v-else class="no-current-image">
+            <el-icon><Picture /></el-icon>
+            <p>{{ $t('admin.products.imageUpload.noCurrentImage') }}</p>
+          </div>
+        </div>
+        
+        <el-divider>{{ $t('admin.products.imageUpload.uploadNew') }}</el-divider>
+        
+        <!-- Upload Method Selection -->
+        <div class="upload-method-selection">
+          <el-radio-group v-model="uploadMethod" @change="clearUploadData">
+            <el-radio label="file">{{ $t('admin.products.imageUpload.uploadFile') }}</el-radio>
+            <el-radio label="url">{{ $t('admin.products.imageUpload.uploadFromUrl') }}</el-radio>
+          </el-radio-group>
+        </div>
+        
+        <!-- File Upload Section -->
+        <div v-show="uploadMethod === 'file'" class="file-upload-section">
+          <el-upload
+          ref="imageUpload"
+          :auto-upload="false"
+          :on-change="handleImageSelect"
+          :before-upload="beforeImageUpload"
+          :show-file-list="false"
+          accept="image/*"
+          drag
+          class="image-uploader"
+        >
+          <div v-if="!selectedImageFile" class="upload-placeholder">
+            <el-icon class="upload-icon"><Plus /></el-icon>
+            <div class="upload-text">
+              <p>{{ $t('admin.products.imageUpload.dragOrClick') }}</p>
+              <p class="upload-hint">{{ $t('admin.products.imageUpload.supportedFormats') }}</p>
+            </div>
+          </div>
+          <div v-else class="selected-image-preview">
+            <img :src="selectedImagePreview" alt="Selected image" />
+            <div class="image-actions">
+              <el-button size="small" @click="clearSelectedImage">{{ $t('common.remove') }}</el-button>
+            </div>
+          </div>
+        </el-upload>
+        </div>
+        
+        <!-- URL Upload Section -->
+        <div v-show="uploadMethod === 'url'" class="url-upload-section">
+          <el-form :model="imageUrlForm" :rules="imageUrlRules" ref="imageUrlFormRef">
+            <el-form-item prop="image_url">
+              <el-input
+                v-model="imageUrlForm.image_url"
+                :placeholder="$t('admin.products.imageUpload.urlPlaceholder')"
+                @input="handleUrlInput"
+                clearable
+              >
+                <template #prefix>
+                  <el-icon><Link /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-form>
+          
+          <!-- URL Image Preview -->
+          <div v-if="urlImagePreview" class="url-image-preview">
+            <img :src="urlImagePreview" alt="URL Preview" @load="urlImageLoaded" @error="urlImageErrored" />
+            <div class="image-actions">
+              <el-button size="small" @click="clearUrlImage">{{ $t('common.remove') }}</el-button>
+            </div>
+          </div>
+          
+          <div v-if="urlImageError" class="url-error">
+            <el-alert
+              :title="$t('admin.products.imageUpload.errors.urlLoadFailed')"
+              type="error"
+              :closable="false"
+              show-icon
+            />
+          </div>
+        </div>
+        
+        <div v-if="uploadProgress > 0 && uploadProgress < 100" class="upload-progress">
+          <el-progress :percentage="uploadProgress" />
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="showImageUploadDialog = false">{{ $t('common.cancel') }}</el-button>
+        <el-button 
+          type="primary" 
+          @click="uploadProductImage" 
+          :loading="uploading"
+          :disabled="!canUpload"
+        >
+          {{ $t('admin.products.imageUpload.upload') }}
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- Products Table -->
     <div class="products-section">
       <div class="section-header">
@@ -219,9 +330,12 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column :label="$t('admin.products.table.actions')" width="150" fixed="right">
+        <el-table-column :label="$t('admin.products.table.actions')" width="200" fixed="right">
           <template #default="scope">
             <el-button size="small" @click="editProduct(scope.row)">{{ $t('common.edit') }}</el-button>
+            <el-button size="small" type="warning" @click="showImageUpload(scope.row)">
+              {{ $t('admin.products.addImage') }}
+            </el-button>
             <el-popconfirm 
               :title="$t('admin.products.confirmDelete')"
               @confirm="deleteProduct(scope.row.id)"
@@ -244,9 +358,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Document, Money, Picture, Star } from '@element-plus/icons-vue'
+import { Plus, Document, Money, Picture, Star, Link } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
@@ -266,15 +380,34 @@ if (!authStore.isAuthenticated || authStore.currentUser?.membership_level !== 'a
 const loading = ref(false)
 const saving = ref(false)
 const previewing = ref(false)
+const uploading = ref(false)
 const showAddDialog = ref(false)
 const showEditDialog = ref(false)
+const showImageUploadDialog = ref(false)
 const editingProduct = ref(null)
+const selectedProduct = ref(null)
 const products = ref([])
 const categories = ref([])
 const merchants = ref([])
 const scrapingPreview = ref(null)
 const extractionDetails = ref(null)
 const extractionMethod = ref('')
+
+// Image upload data
+const selectedImageFile = ref(null)
+const selectedImagePreview = ref('')
+const uploadProgress = ref(0)
+const imageUpload = ref()
+const uploadMethod = ref('file') // 'file' or 'url'
+
+// URL upload data
+const imageUrlForm = reactive({
+  image_url: ''
+})
+const imageUrlFormRef = ref()
+const urlImagePreview = ref('')
+const urlImageValid = ref(false)
+const urlImageError = ref(false)
 
 // Filters
 const filterCategory = ref('')
@@ -307,8 +440,26 @@ const urlRules = {
   ]
 }
 
-// API base URL
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
+const imageUrlRules = {
+  image_url: [
+    { required: true, message: t('admin.products.imageUpload.validation.urlRequired'), trigger: 'blur' },
+    { type: 'url', message: t('admin.products.imageUpload.validation.urlInvalid'), trigger: 'blur' }
+  ]
+}
+
+// API base URL - use backend URL directly since proxy isn't working on port 3003
+const API_BASE = import.meta.env.PROD ? 
+  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002') : 
+  'http://localhost:8002' // Direct backend URL for development
+
+// Computed properties
+const canUpload = computed(() => {
+  if (uploadMethod.value === 'file') {
+    return selectedImageFile.value !== null
+  } else {
+    return urlImageValid.value && imageUrlForm.image_url.trim() !== ''
+  }
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -521,6 +672,218 @@ const deleteProduct = async (productId) => {
     console.error('Error deleting product:', error)
     ElMessage.error(t('admin.products.errors.deleteFailed'))
   }
+}
+
+// Image upload methods
+const showImageUpload = (product) => {
+  selectedProduct.value = product
+  showImageUploadDialog.value = true
+  resetImageUpload()
+}
+
+const resetImageUpload = () => {
+  uploadMethod.value = 'file'
+  selectedImageFile.value = null
+  selectedImagePreview.value = ''
+  uploadProgress.value = 0
+  imageUrlForm.image_url = ''
+  urlImagePreview.value = ''
+  urlImageValid.value = false
+  urlImageError.value = false
+  if (imageUpload.value) {
+    imageUpload.value.clearFiles()
+  }
+  if (imageUrlFormRef.value) {
+    imageUrlFormRef.value.clearValidate()
+  }
+}
+
+const handleImageSelect = (file) => {
+  selectedImageFile.value = file.raw
+  
+  // Create preview URL
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    selectedImagePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file.raw)
+}
+
+const beforeImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt5M = file.size / 1024 / 1024 < 5
+
+  if (!isImage) {
+    ElMessage.error(t('admin.products.imageUpload.errors.notImage'))
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error(t('admin.products.imageUpload.errors.tooLarge'))
+    return false
+  }
+  return true
+}
+
+const clearSelectedImage = () => {
+  selectedImageFile.value = null
+  selectedImagePreview.value = ''
+  if (imageUpload.value) {
+    imageUpload.value.clearFiles()
+  }
+}
+
+// URL upload methods
+const clearUploadData = () => {
+  selectedImageFile.value = null
+  selectedImagePreview.value = ''
+  imageUrlForm.image_url = ''
+  urlImagePreview.value = ''
+  urlImageValid.value = false
+  urlImageError.value = false
+  if (imageUpload.value) {
+    imageUpload.value.clearFiles()
+  }
+}
+
+const handleUrlInput = () => {
+  urlImageError.value = false
+  if (imageUrlForm.image_url.trim()) {
+    // Debounce URL validation
+    setTimeout(() => {
+      validateImageUrl()
+    }, 500)
+  } else {
+    urlImagePreview.value = ''
+    urlImageValid.value = false
+  }
+}
+
+const validateImageUrl = () => {
+  const url = imageUrlForm.image_url.trim()
+  if (!url) {
+    urlImagePreview.value = ''
+    urlImageValid.value = false
+    return
+  }
+  
+  // Check if URL looks like an image
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
+  const isImageUrl = imageExtensions.some(ext => url.toLowerCase().includes(ext)) || 
+                     url.includes('unsplash.com') || 
+                     url.includes('images.') ||
+                     url.includes('img.')
+  
+  if (isImageUrl) {
+    urlImagePreview.value = url
+  } else {
+    urlImageError.value = true
+    urlImageValid.value = false
+  }
+}
+
+const urlImageLoaded = () => {
+  urlImageValid.value = true
+  urlImageError.value = false
+}
+
+const urlImageErrored = () => {
+  urlImageValid.value = false
+  urlImageError.value = true
+  urlImagePreview.value = ''
+}
+
+const clearUrlImage = () => {
+  imageUrlForm.image_url = ''
+  urlImagePreview.value = ''
+  urlImageValid.value = false
+  urlImageError.value = false
+}
+
+const uploadProductImage = async () => {
+  if (!selectedProduct.value) {
+    return
+  }
+
+  try {
+    uploading.value = true
+    uploadProgress.value = 0
+    
+    const token = localStorage.getItem('access_token')
+    
+    if (uploadMethod.value === 'file') {
+      if (!selectedImageFile.value) return
+      
+      const formData = new FormData()
+      formData.append('image', selectedImageFile.value)
+      formData.append('product_id', selectedProduct.value.id.toString())
+
+      const response = await axios.post(`${API_BASE}/api/admin/products/${selectedProduct.value.id}/upload-image`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        }
+      })
+      
+      if (response.data.success) {
+        ElMessage.success(t('admin.products.imageUpload.success'))
+        showImageUploadDialog.value = false
+        resetImageUpload()
+        await loadProducts()
+      } else {
+        ElMessage.error(t('admin.products.imageUpload.errors.uploadFailed'))
+      }
+    } else {
+      // URL method
+      if (!urlImageValid.value) return
+      
+      const response = await axios.post(`${API_BASE}/api/admin/products/${selectedProduct.value.id}/update-image-url`, {
+        image_url: imageUrlForm.image_url.trim()
+      }, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.data.success) {
+        ElMessage.success(t('admin.products.imageUpload.success'))
+        showImageUploadDialog.value = false
+        resetImageUpload()
+        await loadProducts()
+      } else {
+        ElMessage.error(t('admin.products.imageUpload.errors.uploadFailed'))
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error uploading image:', error)
+    ElMessage.error(t('admin.products.imageUpload.errors.uploadFailed'))
+  } finally {
+    uploading.value = false
+    uploadProgress.value = 0
+  }
+}
+
+// Helper function to get correct image URL
+const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return ''
+  
+  // If it's already a full URL (starts with http), return as is
+  if (imageUrl.startsWith('http')) {
+    return imageUrl
+  }
+  
+  // If it's a relative URL, prepend the API base in production
+  if (import.meta.env.PROD) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002'
+    return baseUrl + imageUrl
+  }
+  
+  // In development, use the proxy
+  return imageUrl
 }
 </script>
 
@@ -797,6 +1160,172 @@ const deleteProduct = async (productId) => {
   margin-bottom: 4px;
 }
 
+/* Image Upload Dialog Styles */
+.image-upload-section {
+  padding: 10px 0;
+}
+
+.current-product-info h4 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #303133;
+}
+
+.current-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.current-image img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.current-image p {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
+}
+
+.no-current-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+  margin-bottom: 20px;
+}
+
+.no-current-image .el-icon {
+  font-size: 32px;
+  color: #c0c4cc;
+}
+
+.no-current-image p {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+.image-uploader {
+  width: 100%;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  border: 2px dashed #c0c4cc;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-placeholder:hover {
+  border-color: #409eff;
+  background: #f0f9ff;
+}
+
+.upload-icon {
+  font-size: 32px;
+  color: #c0c4cc;
+  margin-bottom: 10px;
+}
+
+.upload-text {
+  text-align: center;
+}
+
+.upload-text p {
+  margin: 0 0 5px 0;
+  color: #606266;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #909399;
+}
+
+.selected-image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border: 2px solid #409eff;
+  border-radius: 8px;
+  background: #f0f9ff;
+}
+
+.selected-image-preview img {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.image-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.upload-progress {
+  margin-top: 15px;
+}
+
+/* Upload Method Selection */
+.upload-method-selection {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.file-upload-section,
+.url-upload-section {
+  margin-top: 15px;
+}
+
+/* URL Upload Styles */
+.url-upload-section .el-input {
+  margin-bottom: 15px;
+}
+
+.url-image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  border: 2px solid #67c23a;
+  border-radius: 8px;
+  background: #f0f9ff;
+  margin-top: 10px;
+}
+
+.url-image-preview img {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.url-error {
+  margin-top: 10px;
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
@@ -823,6 +1352,11 @@ const deleteProduct = async (productId) => {
   .preview-image {
     width: 120px;
     height: 120px;
+  }
+  
+  .selected-image-preview img {
+    max-width: 150px;
+    max-height: 150px;
   }
 }
 </style>

@@ -48,7 +48,7 @@ class UserService:
                     "id": new_user.id,
                     "email": new_user.email,
                     "username": new_user.username,
-                    "membership_level": new_user.membership_level,
+                    "membership_level": new_user.membership_level.value,  # Convert enum to string
                     "created_at": new_user.created_at,
                     "daily_identifications": new_user.daily_identifications
                 }

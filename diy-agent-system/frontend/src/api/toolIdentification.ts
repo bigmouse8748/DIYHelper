@@ -3,7 +3,10 @@
  */
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'
+// Use backend URL directly since proxy isn't working on port 3003
+const API_BASE = import.meta.env.PROD ? 
+  (import.meta.env.VITE_API_URL || 'http://localhost:8002') : 
+  'http://localhost:8002' // Direct backend URL for development
 
 // Create axios instance with auth interceptor
 const apiClient = axios.create({
