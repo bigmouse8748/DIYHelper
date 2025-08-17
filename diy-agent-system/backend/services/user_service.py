@@ -148,7 +148,11 @@ class UserService:
                 user = db.query(User).filter(User.id == user_id).first()
                 if user:
                     # Reset count if it's a new day
-                    if user.last_reset.date() < datetime.utcnow().date():
+                    if user.last_reset and user.last_reset.date() < datetime.utcnow().date():
+                        user.daily_identifications = 0
+                        user.last_reset = datetime.utcnow()
+                    elif user.last_reset is None:
+                        # First time user - initialize
                         user.daily_identifications = 0
                         user.last_reset = datetime.utcnow()
                     
@@ -174,12 +178,34 @@ class UserService:
                         user.last_reset = datetime.utcnow()
                         db.commit()
                     
+                    # Get all data within session to avoid session binding issues
+                    daily_identifications = user.daily_identifications
+                    membership_level = user.membership_level.value
+                    
+                    # Calculate limits manually to avoid calling methods on detached object
+                    limits = {
+                        MembershipLevel.FREE: 5,
+                        MembershipLevel.PREMIUM: 50,
+                        MembershipLevel.PRO: 999999,
+                        MembershipLevel.ADMIN: 999999
+                    }
+                    daily_limit = limits.get(user.membership_level, 5)
+                    
+                    # Check if can identify
+                    can_identify = daily_identifications < daily_limit
+                    
+                    # Check premium features
+                    has_premium = False
+                    if user.membership_level in [MembershipLevel.PREMIUM, MembershipLevel.PRO, MembershipLevel.ADMIN]:
+                        if user.membership_expiry is None or user.membership_expiry > datetime.utcnow():
+                            has_premium = True
+                    
                     return {
-                        "used": user.daily_identifications,
-                        "limit": user.get_daily_limit(),
-                        "membership": user.membership_level.value,
-                        "can_identify": user.can_identify(),
-                        "has_premium": user.has_premium_features()
+                        "used": daily_identifications,
+                        "limit": daily_limit,
+                        "membership": membership_level,
+                        "can_identify": can_identify,
+                        "has_premium": has_premium
                     }
             return {"used": 0, "limit": 0, "membership": "unknown", "can_identify": False, "has_premium": False}
         except Exception as e:

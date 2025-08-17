@@ -284,9 +284,10 @@ async def identify_tool(
             user = db.query(User).filter(User.username == username).first()
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
+            user_id = user.id  # Store user ID before session closes
         
         # Check daily quota
-        quota_info = UserService.get_user_quota_info(user.id)
+        quota_info = UserService.get_user_quota_info(user_id)
         if not quota_info["can_identify"]:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -294,7 +295,7 @@ async def identify_tool(
             )
         
         # Increment usage count
-        UserService.increment_daily_usage(user.id)
+        UserService.increment_daily_usage(user_id)
         
         # Read and encode image
         image_content = await image.read()
@@ -323,7 +324,7 @@ async def identify_tool(
         # save_identification_history(username, result.data)
         
         # Get updated quota after increment
-        updated_quota = UserService.get_user_quota_info(user.id)
+        updated_quota = UserService.get_user_quota_info(user_id)
         
         # Prepare response
         response_data = result.data
