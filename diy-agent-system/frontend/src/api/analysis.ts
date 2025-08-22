@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { AnalysisResult, AnalysisRequest } from '@/types'
 
 // Use backend URL directly since proxy isn't working on port 3003
-const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8002' : (import.meta.env.VITE_API_URL || 'http://localhost:8002')
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8001' : (import.meta.env.VITE_API_URL || 'http://localhost:8001')
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -191,11 +191,11 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Search, Check, ShoppingBag } from '@element-plus/icons-vue'
-import { useAuthStore } from '@/stores/auth'
+import { useCognitoAuthStore } from '@/stores/cognitoAuth'
 
 const router = useRouter()
 const { t } = useI18n()
-const authStore = useAuthStore()
+const authStore = useCognitoAuthStore()
 
 // Computed properties for arrays to avoid i18n issues
 const diyBenefits = computed(() => {

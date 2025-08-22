@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIY Smart Assistant - Standalone Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #ffffff;
+        }
+
+        /* Header */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e4e7ed;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #667eea;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .site-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #303133;
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-link {
+            color: #606266;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .auth-section {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #606266;
+            border: 1px solid #dcdfe6;
+        }
+
+        .btn-secondary:hover {
+            color: #667eea;
+            border-color: #667eea;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            padding: 80px 20px;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .hero-content {
+            text-align: left;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 20px 0;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: #606266;
+            margin: 0 0 40px 0;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 60px;
+        }
+
+        .hero-actions .btn {
+            padding: 14px 28px;
+            font-size: 16px;
+        }
+
+        .social-proof {
+            border-top: 1px solid #e4e7ed;
+            padding-top: 32px;
+        }
+
+        .proof-text {
+            color: #909399;
+            font-size: 14px;
+            margin: 0 0 16px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat {
+            text-align: left;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #909399;
+            font-weight: 500;
+        }
+
+        /* Demo Interface */
+        .hero-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .demo-interface {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .demo-window {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e4e7ed;
+            overflow: hidden;
+        }
+
+        .window-header {
+            background: #f5f7fa;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e4e7ed;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .control.red { background: #ff5f57; }
+        .control.yellow { background: #ffbd2e; }
+        .control.green { background: #28ca42; }
+
+        .window-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #606266;
+        }
+
+        .window-content {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .demo-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            background: #f8f9ff;
+            border: 1px solid #e1e6ff;
+        }
+
+        .demo-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .demo-text h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #303133;
+            margin: 0 0 4px 0;
+        }
+
+        .demo-text p {
+            font-size: 14px;
+            color: #606266;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .features-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #303133;
+            margin: 0 0 60px 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: #667eea;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #303133;
+            margin: 0 0 12px 0;
+        }
+
+        .feature-card p {
+            color: #606266;
+            line-height: 1.6;
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .debug-toggle {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .debug-info {
+            background: white;
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            padding: 16px;
+            width: 300px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: none;
+        }
+
+        .debug-info.show {
+            display: block;
+        }
+
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .debug-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .debug-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .debug-actions button {
+            flex: 1;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 16px;
+                height: 60px;
+            }
+            
+            .main-nav {
+                display: none;
+            }
+            
+            .site-title {
+                font-size: 20px;
+            }
+            
+            .hero {
+                padding: 60px 16px;
+            }
+            
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 40px;
+                text-align: center;
+            }
+            
+            .hero-title {
+                font-size: 36px;
+            }
+            
+            .hero-subtitle {
+                font-size: 18px;
+            }
+            
+            .hero-actions {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .stats-row {
+                gap: 20px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon">🔨</div>
+                <h1 class="site-title" id="siteTitle">DIY Smart Assistant</h1>
+            </div>
+            
+            <nav class="main-nav">
+                <a href="#features" class="nav-link" id="navFeatures">Features</a>
+                <a href="#how-it-works" class="nav-link" id="navHowItWorks">How It Works</a>
+                <a href="#pricing" class="nav-link" id="navPricing">Pricing</a>
+                <a href="#about" class="nav-link" id="navAbout">About</a>
+            </nav>
+            
+            <div class="auth-section">
+                <a href="#" class="btn btn-secondary" onclick="handleLogin()" id="signInBtn">Sign In</a>
+                <a href="#" class="btn btn-primary" onclick="handleRegister()" id="getStartedBtn">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title" id="heroTitle">
+                    Intelligent DIY Project Assistant
+                </h1>
+                <h2 class="hero-subtitle" id="heroSubtitle">
+                    Transform your DIY projects with AI-powered tool identification, 
+                    smart product recommendations, and expert guidance.
+                </h2>
+                
+                <div class="hero-actions">
+                    <a href="#" class="btn btn-primary" onclick="handleRegister()" id="startTrialBtn">
+                        Start Free Trial
+                    </a>
+                    <a href="#" class="btn btn-secondary" onclick="handleLogin()" id="signInBtn2">
+                        Sign In
+                    </a>
+                </div>
+
+                <div class="social-proof">
+                    <p class="proof-text" id="proofText">Trusted by 10,000+ DIY enthusiasts</p>
+                    <div class="stats-row">
+                        <div class="stat">
+                            <span class="stat-number">15K+</span>
+                            <span class="stat-label" id="toolsIdentifiedLabel">Tools Identified</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">8K+</span>
+                            <span class="stat-label" id="projectsCompletedLabel">Projects Completed</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">98%</span>
+                            <span class="stat-label" id="accuracyRateLabel">Accuracy Rate</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-image">
+                <div class="demo-interface">
+                    <div class="demo-window">
+                        <div class="window-header">
+                            <div class="window-controls">
+                                <span class="control red"></span>
+                                <span class="control yellow"></span>
+                                <span class="control green"></span>
+                            </div>
+                            <span class="window-title" id="windowTitle">DIY Assistant</span>
+                        </div>
+                        <div class="window-content">
+                            <div class="demo-section">
+                                <div class="demo-icon">🔍</div>
+                                <div class="demo-text">
+                                    <h4 id="toolIdFeature">Tool Identification</h4>
+                                    <p id="toolIdDesc">Upload image → AI identifies → Get purchase links</p>
+                                </div>
+                            </div>
+                            <div class="demo-section">
+                                <div class="demo-icon">🛒</div>
+                                <div class="demo-text">
+                                    <h4 id="smartRecoFeature">Smart Recommendations</h4>
+                                    <p id="smartRecoDesc">Project type → Product suggestions → Best prices</p>
+                                </div>
+                            </div>
+                            <div class="demo-section">
+                                <div class="demo-icon">📊</div>
+                                <div class="demo-text">
+                                    <h4 id="projectAnalysisFeature">Project Analysis</h4>
+                                    <p id="projectAnalysisDesc">Multiple images → Complete guidance → Step-by-step</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <h2 class="features-title" id="featuresTitle">Powerful Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3 id="featureToolIdTitle">Tool Identification</h3>
+                    <p id="featureToolIdDesc">Upload an image of any tool and our AI will instantly identify it and find the best purchasing options from top retailers.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🛒</div>
+                    <h3 id="featureSmartRecoTitle">Smart Recommendations</h3>
+                    <p id="featureSmartRecoDesc">Get intelligent product recommendations tailored to your specific DIY project needs and budget.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 id="featureProjectAnalysisTitle">Project Analysis</h3>
+                    <p id="featureProjectAnalysisDesc">Complete analysis of your DIY projects with step-by-step guidance and safety recommendations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel">
+        <button class="debug-toggle" onclick="toggleDebug()">🔧</button>
+        <div class="debug-info" id="debugInfo">
+            <div class="debug-header">
+                <span>🔧 Debug Panel</span>
+                <button onclick="toggleDebug()" style="background:none;border:none;cursor:pointer;">×</button>
+            </div>
+            <div class="debug-item">
+                <strong>Status:</strong> <span>Standalone HTML</span>
+            </div>
+            <div class="debug-item">
+                <strong>Mode:</strong> <span>Independent</span>
+            </div>
+            <div class="debug-item">
+                <strong>Backend:</strong> <span id="backendStatus">Checking...</span>
+            </div>
+            <div class="debug-actions">
+                <button class="btn btn-primary" onclick="testBackend()">Test API</button>
+                <button class="btn btn-secondary" onclick="testLogin()">Test Login</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+            });
+            
+            // Update language indicator
+            
+        }
+
+        // Debug functions
+        function toggleDebug() {
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.classList.toggle('show');
+        }
+
+        function handleLogin() {
+            console.log('🔗 Navigating to login...');
+            window.location.href = 'login.html';
+        }
+
+        function handleRegister() {
+            console.log('🔗 Navigating to register...');
+            window.location.href = 'register.html';
+        }
+
+        function testBackend() {
+            fetch('http://localhost:8000/api/v1/agents/available')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('✅ Backend API test successful:', data);
+                    document.getElementById('backendStatus').textContent = 'Connected ✅';
+                    alert('Backend API is working! Check console for details.');
+                })
+                .catch(error => {
+                    console.error('❌ Backend API test failed:', error);
+                    document.getElementById('backendStatus').textContent = 'Failed ❌';
+                    alert('Backend API test failed. Make sure the backend is running on port 8000.');
+                });
+        }
+
+        function testLogin() {
+            const loginData = {
+                email: 'test2@example.com',
+                password: 'Password123'
+            };
+
+            fetch('http://localhost:8000/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loginData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Login test successful:', data);
+                alert('Login test successful! Check console for details.');
+            })
+            .catch(error => {
+                console.error('❌ Login test failed:', error);
+                alert('Login test failed. Check console for details.');
+            });
+        }
+
+        // Test backend status on load
+        setTimeout(testBackend, 1000);
+
+        // Smooth scrolling for navigation links
+        document.addEventListener('DOMContentLoaded', function() {
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
+    
+        // Listen for language changes from dashboard
+        window.addEventListener('storage', function(e) {
+            console.log('Storage event detected:', e.key, e.newValue);
+            
+        });
+    </script>
+</body>
+</html>

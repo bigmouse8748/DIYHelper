@@ -377,7 +377,51 @@ export default {
     emailInvalid: 'Please enter a valid email',
     passwordMismatch: 'Passwords do not match',
     usernameInvalid: 'Username can only contain letters, numbers, and underscores',
-    mustAcceptTerms: 'You must accept the terms and conditions'
+    mustAcceptTerms: 'You must accept the terms and conditions',
+    
+    // Cognito specific additions
+    emailPlaceholder: 'Enter your email',
+    passwordPlaceholder: 'Enter your password',
+    usernamePlaceholder: 'Choose a username',
+    confirmPasswordPlaceholder: 'Confirm your password',
+    confirmationCode: 'Verification Code',
+    confirmEmail: 'Confirm Email',
+    confirmEmailMessage: 'Please enter the verification code sent to your email',
+    resetPassword: 'Reset Password',
+    resetPasswordMessage: 'Enter your email to receive a reset code',
+    sendResetCode: 'Send Reset Code',
+    newPassword: 'New Password',
+    newPasswordMessage: 'Enter the code and your new password',
+    newPasswordPlaceholder: 'Enter new password',
+    agreeToTerms: 'I agree to the',
+    termsAndConditions: 'Terms and Conditions',
+    signUpNow: 'Sign up now',
+    alreadyHaveAccount: 'Already have an account?',
+    signInNow: 'Sign in now',
+    emailConfirmed: 'Email confirmed successfully!',
+    passwordResetSuccess: 'Password reset successfully!',
+    termsAccepted: 'Terms and conditions accepted',
+    forgotPassword: 'Forgot Password?',
+    
+    // Password requirements
+    passwordMinLength: 'At least 8 characters',
+    passwordUppercase: 'One uppercase letter',
+    passwordLowercase: 'One lowercase letter', 
+    passwordNumbers: 'One number',
+    
+    // Terms content (simplified)
+    termsTitle: 'Terms and Conditions',
+    termsIntro: 'By using DIY Smart Assistant, you agree to these terms.',
+    termsAcceptance: 'Acceptance of Terms',
+    termsAcceptanceContent: 'By accessing and using this service, you accept and agree to be bound by the terms and provision of this agreement.',
+    termsService: 'Service Description',
+    termsServiceContent: 'DIY Smart Assistant provides AI-powered project analysis and tool identification services.',
+    termsPrivacy: 'Privacy Policy',
+    termsPrivacyContent: 'We respect your privacy and handle your data according to our privacy policy.',
+    termsLimitations: 'Service Limitations',
+    termsLimitationsContent: 'Service availability may be limited by your subscription plan.',
+    termsChanges: 'Changes to Terms',
+    termsChangesContent: 'We reserve the right to modify these terms at any time.'
   },
 
   // Membership
@@ -418,6 +462,9 @@ export default {
 
   // Admin
   admin: {
+    panel: {
+      title: 'Admin Panel'
+    },
     accessDenied: 'Admin access required',
     
     products: {
@@ -629,5 +676,26 @@ export default {
     errors: {
       loadFailed: 'Failed to load products'
     }
+  },
+
+  // Validation messages
+  validation: {
+    required: 'This field is required',
+    email: 'Please enter a valid email',
+    minLength: 'Minimum length is {min} characters',
+    maxLength: 'Maximum length is {max} characters',
+    
+    // Cognito specific validations
+    emailRequired: 'Email is required',
+    emailInvalid: 'Please enter a valid email address',
+    passwordRequired: 'Password is required',
+    passwordInvalid: 'Password must meet requirements',
+    usernameRequired: 'Username is required',
+    usernameLength: 'Username must be 3-20 characters',
+    confirmPasswordRequired: 'Please confirm your password',
+    passwordMismatch: 'Passwords do not match',
+    confirmationCodeRequired: 'Verification code is required',
+    allFieldsRequired: 'All fields are required',
+    termsRequired: 'You must accept the terms and conditions'
   }
 }

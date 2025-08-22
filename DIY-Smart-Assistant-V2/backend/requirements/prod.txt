@@ -1,0 +1,16 @@
+-r base.txt
+
+# Production Server
+gunicorn==21.2.0
+
+# Database (Production)
+psycopg2-binary==2.9.9
+
+# Caching
+redis==5.0.1
+
+# Task Queue
+celery==5.3.4
+
+# Monitoring
+sentry-sdk[fastapi]==1.38.0

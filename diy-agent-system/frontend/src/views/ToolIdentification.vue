@@ -7,7 +7,7 @@
     </div>
 
     <!-- Login prompt if not authenticated -->
-    <div v-if="!isAuthenticated" class="login-prompt">
+    <div v-if="!authStore.isAuthenticated" class="login-prompt">
       <el-card>
         <div class="prompt-content">
           <el-icon :size="48"><Lock /></el-icon>
@@ -29,9 +29,9 @@
           <div class="status-content">
             <div class="user-info">
               <el-icon><User /></el-icon>
-              <span>{{ currentUser.username }}</span>
-              <el-tag :type="getMembershipType(currentUser.membership)">
-                {{ $t(`membership.${currentUser.membership}`) }}
+              <span>{{ currentUser?.username }}</span>
+              <el-tag :type="getMembershipType(currentUser?.group || 'free')">
+                {{ $t(`membership.${currentUser?.group || 'free'}`) }}
               </el-tag>
             </div>
             <div class="usage-info">
@@ -42,7 +42,7 @@
                 :color="getProgressColor"
                 style="width: 200px"
               >
-                <span>{{ currentUser.dailyUsed }}/{{ currentUser.dailyLimit }}</span>
+                <span>0/{{ authStore.dailyQuota === -1 ? '∞' : authStore.dailyQuota }}</span>
               </el-progress>
             </div>
           </div>
@@ -352,14 +352,13 @@ import {
   Lock
 } from '@element-plus/icons-vue'
 import { identifyToolAPI, getIdentificationHistory } from '@/api/toolIdentification'
-import { useAuthStore } from '@/stores/auth'
+import { useCognitoAuthStore } from '@/stores/cognitoAuth'
 
 const { t } = useI18n()
 const router = useRouter()
-const authStore = useAuthStore()
+const authStore = useCognitoAuthStore()
 
 // Auth state
-const isAuthenticated = computed(() => authStore.isAuthenticated)
 const currentUser = computed(() => authStore.currentUser)
 
 // Upload state
@@ -377,8 +376,9 @@ const identificationHistory = ref<any[]>([])
 
 // Computed
 const usagePercentage = computed(() => {
-  if (!currentUser.value) return 0
-  return (currentUser.value.dailyUsed / currentUser.value.dailyLimit) * 100
+  // For now, return 0 since we don't track daily usage yet in Cognito
+  // TODO: Implement daily usage tracking
+  return 0
 })
 
 const getProgressColor = computed(() => {
@@ -391,8 +391,9 @@ const getProgressColor = computed(() => {
 // Methods
 const getMembershipType = (level: string) => {
   switch (level) {
-    case 'pro': return 'danger'
+    case 'admin': return 'danger'
     case 'premium': return 'warning'
+    case 'pro': return 'success'
     default: return 'info'
   }
 }
@@ -515,9 +516,24 @@ const goToRegister = () => {
 }
 
 // Lifecycle
-onMounted(() => {
-  if (isAuthenticated.value) {
-    loadHistory()
+onMounted(async () => {
+  // Wait for authentication to be fully initialized
+  if (authStore.isLoading) {
+    let attempts = 0
+    while (authStore.isLoading && attempts < 30) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+  }
+  
+  // Only load history if user is authenticated
+  if (authStore.isAuthenticated) {
+    try {
+      await loadHistory()
+    } catch (error) {
+      console.warn('Failed to load history on mount:', error)
+      // Don't show error to user, just silently fail
+    }
   }
 })
 </script>

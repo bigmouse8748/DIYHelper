@@ -362,19 +362,15 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Document, Money, Picture, Star, Link } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore } from '@/stores/auth'
+import { useCognitoAuthStore } from '@/stores/cognitoAuth'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const { t } = useI18n()
-const authStore = useAuthStore()
+const authStore = useCognitoAuthStore()
 const router = useRouter()
 
-// Check admin access
-if (!authStore.isAuthenticated || authStore.currentUser?.membership_level !== 'admin') {
-  ElMessage.error(t('admin.accessDenied'))
-  router.push('/dashboard')
-}
+// Admin access is handled by route guard, no need for additional check here
 
 // Reactive data
 const loading = ref(false)
@@ -447,10 +443,10 @@ const imageUrlRules = {
   ]
 }
 
-// API base URL - use backend URL directly since proxy isn't working on port 3003
+// API base URL - use 8080 backend for Our Picks management
 const API_BASE = import.meta.env.PROD ? 
-  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002') : 
-  'http://localhost:8002' // Direct backend URL for development
+  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001') : 
+  'http://localhost:8001' // Use 8080 backend with Our Picks endpoints
 
 // Computed properties
 const canUpload = computed(() => {
@@ -476,10 +472,10 @@ const loadProducts = async () => {
     loading.value = true
     const token = localStorage.getItem('access_token')
     
-    const response = await axios.get(`${API_BASE}/api/admin/products`, {
-      headers: { Authorization: `Bearer ${token}` },
+    // Use the Our Picks public endpoint for now (in real implementation would have admin endpoint)
+    const response = await axios.get(`${API_BASE}/api/our-picks/public/products`, {
       params: {
-        include_inactive: includeInactive.value
+        page_size: 100 // Load all products for admin management
       }
     })
     
@@ -495,6 +491,7 @@ const loadProducts = async () => {
       }
       
       products.value = productList
+      console.log(`Admin loaded ${productList.length} synchronized products`)
     }
   } catch (error) {
     console.error('Error loading products:', error)
@@ -505,25 +502,30 @@ const loadProducts = async () => {
 }
 
 const loadCategories = async () => {
-  try {
-    const response = await axios.get(`${API_BASE}/api/products/categories`)
-    if (response.data.success) {
-      categories.value = response.data.categories
-    }
-  } catch (error) {
-    console.error('Error loading categories:', error)
-  }
+  // Mock categories for Our Picks
+  categories.value = [
+    { value: 'power_tools', label: 'Power Tools' },
+    { value: 'hand_tools', label: 'Hand Tools' },
+    { value: 'safety_equipment', label: 'Safety Equipment' },
+    { value: 'building_materials', label: 'Building Materials' },
+    { value: 'hardware', label: 'Hardware' },
+    { value: 'plumbing', label: 'Plumbing' },
+    { value: 'electrical', label: 'Electrical' },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'other', label: 'Other' }
+  ]
 }
 
 const loadMerchants = async () => {
-  try {
-    const response = await axios.get(`${API_BASE}/api/products/merchants`)
-    if (response.data.success) {
-      merchants.value = response.data.merchants
-    }
-  } catch (error) {
-    console.error('Error loading merchants:', error)
-  }
+  // Mock merchants for Our Picks
+  merchants.value = [
+    { value: 'amazon', label: 'Amazon' },
+    { value: 'home_depot', label: 'Home Depot' },
+    { value: 'lowes', label: 'Lowes' },
+    { value: 'walmart', label: 'Walmart' },
+    { value: 'target', label: 'Target' },
+    { value: 'other', label: 'Other' }
+  ]
 }
 
 const resetForm = () => {
@@ -564,26 +566,30 @@ const previewProduct = async () => {
     
     const token = localStorage.getItem('access_token')
     
-    // Call the scraper endpoint to get preview
-    const response = await axios.post(`${API_BASE}/api/admin/products/from-url`, {
-      product_url: urlForm.product_url,
-      is_featured: urlForm.is_featured
-    }, {
+    // Call the Our Picks analyzer endpoint to get preview
+    const formData = new FormData()
+    formData.append('product_url', urlForm.product_url)
+    
+    const response = await axios.post(`${API_BASE}/api/admin/our-picks/analyze`, formData, {
       headers: { Authorization: `Bearer ${token}` }
     })
     
     if (response.data.success) {
-      scrapingPreview.value = response.data.scraped_data
-      extractionDetails.value = response.data.extraction_details
+      scrapingPreview.value = response.data.extracted_data
+      extractionDetails.value = {
+        title_extracted: !!response.data.extracted_data.title,
+        price_extracted: !!(response.data.extracted_data.original_price || response.data.extracted_data.sale_price),
+        image_extracted: !!response.data.extracted_data.image_url,
+        brand_extracted: !!response.data.extracted_data.brand
+      }
       extractionMethod.value = response.data.extraction_method
       
       // Show success message with extraction info
       const methodText = response.data.extraction_method === 'ai' ? 'AI extraction' : 
                         response.data.extraction_method === 'basic' ? 'Basic extraction' : 
-                        response.data.extraction_method === 'google_shopping_search' ? 'Google Shopping search' :
-                        response.data.extraction_method === 'web_search_ai' ? 'Web search + AI analysis' :
-                        response.data.extraction_method?.includes('enhanced_with') ? 'Enhanced with search' :
-                        'Fallback mode'
+                        response.data.extraction_method === 'ai_enhanced' ? 'AI Enhanced extraction' :
+                        response.data.extraction_method?.includes('search') ? 'Search-based extraction' :
+                        'Analysis completed'
       ElMessage.success(`${t('admin.products.messages.previewSuccess')} (${methodText})`)
     }
   } catch (error) {
@@ -599,12 +605,30 @@ const saveProductFromUrl = async () => {
   
   try {
     saving.value = true
+    const token = localStorage.getItem('access_token')
     
-    // Product is already created by the preview call
-    ElMessage.success(t('admin.products.messages.createSuccess'))
-    showAddDialog.value = false
-    resetForm()
-    await loadProducts()
+    // Create FormData for the create endpoint
+    const formData = new FormData()
+    formData.append('analysis_id', 'temp_id') // Placeholder analysis ID
+    formData.append('title', scrapingPreview.value.title || 'Unknown Product')
+    formData.append('brand', scrapingPreview.value.brand || 'Unknown')
+    formData.append('category', scrapingPreview.value.category || 'other')
+    formData.append('affiliate_link', urlForm.product_url)
+    formData.append('is_featured', urlForm.is_featured.toString())
+    formData.append('admin_notes', `Created from URL: ${urlForm.product_url}`)
+    
+    const response = await axios.post(`${API_BASE}/api/admin/our-picks/create`, formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+    if (response.data.success) {
+      ElMessage.success(t('admin.products.messages.createSuccess'))
+      showAddDialog.value = false
+      resetForm()
+      await loadProducts()
+    } else {
+      throw new Error(response.data.message || 'Unknown error')
+    }
   } catch (error) {
     console.error('Error saving product from URL:', error)
     ElMessage.error(t('admin.products.errors.createFailed'))

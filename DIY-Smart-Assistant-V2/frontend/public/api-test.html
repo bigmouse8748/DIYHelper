@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+        .error { background: #ffeeee; color: red; }
+        .success { background: #eeffee; color: green; }
+    </style>
+</head>
+<body>
+    <h1>API Connectivity Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Basic Health Check</h3>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="health-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Agent Status Check</h3>
+        <button onclick="testAgentStatus()">Test Agent Status</button>
+        <div id="agent-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Project Analysis (OPTIONS)</h3>
+        <button onclick="testProjectAnalysisOptions()">Test CORS Preflight</button>
+        <div id="project-options-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: Tool Identification (OPTIONS)</h3>
+        <button onclick="testToolIdentificationOptions()">Test CORS Preflight</button>
+        <div id="tool-options-result" class="result"></div>
+    </div>
+
+    <script>
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="success">SUCCESS: ${JSON.stringify(data)}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">ERROR: ${error.message}</div>`;
+            }
+        }
+
+        async function testAgentStatus() {
+            const resultDiv = document.getElementById('agent-result');
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/agents/status');
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="success">SUCCESS: ${JSON.stringify(data)}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">ERROR: ${error.message}</div>`;
+            }
+        }
+
+        async function testProjectAnalysisOptions() {
+            const resultDiv = document.getElementById('project-options-result');
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/agents/project/analyze', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:8080',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                resultDiv.innerHTML = `<div class="success">OPTIONS SUCCESS: Status ${response.status}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">OPTIONS ERROR: ${error.message}</div>`;
+            }
+        }
+
+        async function testToolIdentificationOptions() {
+            const resultDiv = document.getElementById('tool-options-result');
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/agents/tool-identification/analyze', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:8080',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                resultDiv.innerHTML = `<div class="success">OPTIONS SUCCESS: Status ${response.status}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">OPTIONS ERROR: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

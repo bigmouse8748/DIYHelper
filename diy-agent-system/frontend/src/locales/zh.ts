@@ -418,6 +418,9 @@ export default {
 
   // 管理员
   admin: {
+    panel: {
+      title: '管理员面板'
+    },
     accessDenied: '需要管理员权限',
     
     products: {

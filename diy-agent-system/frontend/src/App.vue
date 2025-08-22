@@ -32,11 +32,11 @@
                         <el-icon><User /></el-icon>
                         {{ $t('nav.dashboard') }}
                       </el-dropdown-item>
-                      <el-dropdown-item v-if="authStore.currentUser?.membership_level === 'admin'" @click="goToAdminProducts">
+                      <el-dropdown-item v-if="authStore.isAdmin" @click="goToAdminProducts">
                         <el-icon><Setting /></el-icon>
                         {{ $t('admin.products.title') }}
                       </el-dropdown-item>
-                      <el-dropdown-item v-if="authStore.currentUser?.membership_level === 'admin'" @click="goToAdminUsers">
+                      <el-dropdown-item v-if="authStore.isAdmin" @click="goToAdminUsers">
                         <el-icon><User /></el-icon>
                         {{ $t('admin.users.title') }}
                       </el-dropdown-item>
@@ -81,12 +81,12 @@ import { Tools, User, ArrowDown, SwitchButton, Setting } from '@element-plus/ico
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
-import { useAuthStore } from '@/stores/auth'
+import { useCognitoAuthStore } from '@/stores/cognitoAuth'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const authStore = useAuthStore()
+const authStore = useCognitoAuthStore()
 
 // Hide navigation on login/register pages
 const hideNavigation = computed(() => route.meta?.hideNav === true)
@@ -112,10 +112,8 @@ const goToAdminUsers = () => {
   router.push('/admin/users')
 }
 
-const handleLogout = () => {
-  authStore.logout()
-  ElMessage.success(t('auth.logoutSuccess'))
-  router.push('/')
+const handleLogout = async () => {
+  await authStore.logout()
 }
 
 // Initialize auth on app mount

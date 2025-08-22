@@ -11,7 +11,9 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@aws-amplify/ui-vue": "^4.3.3",
     "@element-plus/icons-vue": "^2.1.0",
+    "aws-amplify": "^6.15.5",
     "axios": "^1.6.2",
     "dayjs": "^1.11.10",
     "element-plus": "^2.4.3",

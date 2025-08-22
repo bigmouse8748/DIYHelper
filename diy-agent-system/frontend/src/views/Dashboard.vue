@@ -11,6 +11,24 @@
         <div class="card-header">
           <el-icon><User /></el-icon>
           <span>{{ $t('dashboard.userInfo') }}</span>
+          <div style="margin-left: auto; display: flex; gap: 8px;">
+            <el-button 
+              v-if="isAdmin"
+              type="primary" 
+              size="small"
+              :icon="Setting"
+              @click="goToAdminPanel"
+            >
+              {{ $t('admin.panel.title') }}
+            </el-button>
+            <el-button 
+              text 
+              type="primary" 
+              @click="testAuth"
+            >
+              Debug Auth
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -22,12 +40,12 @@
           {{ authStore.currentUser?.email }}
         </el-descriptions-item>
         <el-descriptions-item :label="$t('membership.level')">
-          <el-tag :type="getMembershipType(authStore.currentUser?.membership_level)">
-            {{ $t(`membership.${authStore.currentUser?.membership_level}`) }}
+          <el-tag :type="getMembershipType(authStore.currentUser?.group)">
+            {{ $t(`membership.${authStore.currentUser?.group || 'free'}`) }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item :label="$t('toolIdentification.dailyUsage')">
-          {{ authStore.currentUser?.dailyUsed || 0 }} / {{ authStore.currentUser?.dailyLimit || 0 }}
+          0 / {{ authStore.dailyQuota === -1 ? '∞' : authStore.dailyQuota }}
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -190,14 +208,16 @@ import {
   Refresh,
   View,
   Delete,
-  Tools
+  Tools,
+  Setting
 } from '@element-plus/icons-vue'
 import { getIdentificationHistory, deleteIdentification } from '@/api/toolIdentification'
-import { useAuthStore } from '@/stores/auth'
+import { useCognitoAuthStore } from '@/stores/cognitoAuth'
+import { debugAuth } from '@/api/debug'
 
 const { t } = useI18n()
 const router = useRouter()
-const authStore = useAuthStore()
+const authStore = useCognitoAuthStore()
 
 // State
 const isLoading = ref(false)
@@ -209,13 +229,19 @@ const showDetailDialog = ref(false)
 const selectedHistory = ref<any>(null)
 
 // Computed
-const getMembershipType = (level?: string) => {
-  switch (level) {
-    case 'pro': return 'danger'
+const getMembershipType = (group?: string) => {
+  switch (group) {
+    case 'admin': return 'danger'
     case 'premium': return 'warning'
+    case 'pro': return 'success'
+    case 'free': 
     default: return 'info'
   }
 }
+
+const isAdmin = computed(() => {
+  return authStore.currentUser?.group === 'admin'
+})
 
 // Methods
 const loadHistory = async () => {
@@ -272,8 +298,32 @@ const goToToolIdentification = () => {
   router.push('/tool-identification')
 }
 
+const goToAdminPanel = () => {
+  router.push('/admin/products')
+}
+
 const openProductLink = (url: string) => {
   window.open(url, '_blank')
+}
+
+const testAuth = async () => {
+  try {
+    console.log('🧪 Testing authentication...')
+    console.log('Current auth state:', {
+      isAuthenticated: authStore.isAuthenticated,
+      isAdmin: authStore.isAdmin,
+      userGroups: authStore.userGroups,
+      currentUser: authStore.currentUser
+    })
+    
+    const result = await debugAuth()
+    console.log('🎯 Auth test result:', result)
+    
+    ElMessage.success(`Auth test successful! Admin status: ${result.is_admin}`)
+  } catch (error: any) {
+    console.error('❌ Auth test failed:', error)
+    ElMessage.error(`Auth test failed: ${error.response?.data?.detail || error.message}`)
+  }
 }
 
 // Lifecycle

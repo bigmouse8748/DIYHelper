@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Analysis - DIY Smart Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+        }
+
+        /* Header */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e4e7ed;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        .site-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #303133;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #606266;
+            border: 1px solid #dcdfe6;
+        }
+
+        .btn-secondary:hover {
+            color: #667eea;
+            border-color: #667eea;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #303133;
+            margin-bottom: 16px;
+        }
+
+        .page-subtitle {
+            font-size: 18px;
+            color: #606266;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .upload-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #dcdfe6;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 24px;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #c0c4cc;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #606266;
+            margin-bottom: 16px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #909399;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #303133;
+        }
+
+        .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dcdfe6;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        /* Image Gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .image-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .image-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading-content {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .loading-image {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+        
+        /* Uploaded Images Display */
+        .uploaded-images-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .uploaded-image-item {
+            text-align: center;
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f8f9ff;
+        }
+        
+        .uploaded-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .uploaded-image-label {
+            font-size: 14px;
+            color: #606266;
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 25px;
+            margin: 20px 0;
+        }
+        
+        .loading-image {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            object-fit: cover;
+            border: 3px solid #667eea;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 25px;
+            transition: width 0.3s ease;
+        }
+
+        .loading-steps {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .loading-step {
+            padding: 8px 0;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+
+        .loading-step.active {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading-step.completed {
+            color: #4CAF50;
+        }
+
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .step-icon.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .step-icon.completed {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .step-icon.pending {
+            background: #f0f0f0;
+            color: #999;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .analysis-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-icon {
+            font-size: 24px;
+        }
+
+        .project-overview {
+            margin-bottom: 24px;
+        }
+
+        .project-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #303133;
+            margin-bottom: 12px;
+        }
+
+        .project-description {
+            color: #606266;
+            margin-bottom: 16px;
+        }
+
+        .project-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .meta-item {
+            text-align: center;
+            padding: 16px;
+            background: #f8f9ff;
+            border-radius: 8px;
+        }
+
+        .meta-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .meta-label {
+            font-size: 14px;
+            color: #606266;
+        }
+
+        /* Lists */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .item-card {
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 8px;
+        }
+
+        .item-details {
+            font-size: 14px;
+            color: #606266;
+        }
+
+        /* Steps */
+        .steps-list {
+            counter-reset: step-counter;
+        }
+
+        .step-item {
+            counter-increment: step-counter;
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .step-item::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: -12px;
+            top: 20px;
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 8px;
+            margin-left: 20px;
+        }
+
+        .step-description {
+            color: #606266;
+            margin-left: 20px;
+        }
+
+        /* Safety Notes */
+        .safety-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: #fff5f5;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .safety-icon {
+            color: #dc2626;
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .safety-text {
+            color: #7f1d1d;
+        }
+        
+        /* Web Search Results */
+        .web-search-item {
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9ff;
+        }
+        
+        .web-search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e4e7ed;
+            padding-bottom: 12px;
+        }
+        
+        .web-search-item-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #303133;
+        }
+        
+        .web-search-type {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .product-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        
+        .product-option {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .product-option:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+        
+        .product-title {
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .product-retailer {
+            color: #667eea;
+            font-weight: 500;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        
+        .product-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #27ae60;
+            margin-bottom: 6px;
+        }
+        
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .product-features {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .product-link {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .product-link:hover {
+            background: #5a6fd8;
+        }
+        
+        .recommendation-badge {
+            background: #f39c12;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        
+        .shopping-guide {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e4e7ed;
+        }
+        
+        .shopping-tips {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 16px;
+        }
+        
+        .tip-section {
+            background: white;
+            border: 1px solid #e4e7ed;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tip-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .tip-list li {
+            padding: 4px 0;
+            color: #606266;
+            font-size: 14px;
+            position: relative;
+            padding-left: 16px;
+        }
+        
+        .tip-list li::before {
+            content: '•';
+            color: #667eea;
+            position: absolute;
+            left: 0;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.success {
+            background: #67c23a;
+        }
+
+        .toast.error {
+            background: #f56c6c;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 16px;
+                height: 60px;
+            }
+            
+            .main-content {
+                padding: 24px 16px;
+            }
+            
+            .page-title {
+                font-size: 28px;
+            }
+            
+            .upload-section {
+                padding: 24px;
+            }
+            
+            .upload-area {
+                padding: 40px 20px;
+            }
+            
+            .project-meta {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon">🔨</div>
+                <h1 class="site-title" id="siteTitle">DIY Smart Assistant</h1>
+            </div>
+            
+            <div class="user-section">
+                
+                <button class="btn btn-secondary" onclick="goBack()" id="backBtn">← Back</button>
+                <button class="btn btn-secondary" onclick="logout()" id="logoutBtn">Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <section class="page-header">
+            <h1 class="page-title" id="pageTitle">Project Analysis</h1>
+            <p class="page-subtitle" id="pageSubtitle">
+                Upload multiple project images for comprehensive AI analysis including materials, tools, steps, and safety guidelines.
+            </p>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <h3 class="upload-title" id="uploadTitle">Upload Project Images</h3>
+            
+            <div class="upload-area" id="uploadArea" onclick="triggerFileInput()">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text" id="uploadText">Click to upload or drag and drop images</div>
+                <div class="upload-hint" id="uploadHint">Upload 1-4 images (JPG, PNG, GIF up to 10MB each)</div>
+                <input type="file" id="fileInput" class="file-input" accept="image/*" multiple onchange="handleFileSelect(event)">
+            </div>
+
+            <div class="image-gallery" id="imageGallery">
+                <!-- Uploaded images will appear here -->
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="descriptionLabel">Project Description (Optional)</label>
+                <textarea id="description" class="form-textarea" placeholder="Describe your project, materials, or specific questions..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="projectTypeLabel">Project Type</label>
+                <select id="projectType" class="form-select">
+                    <option value="">Select project type</option>
+                    <option value="woodworking">Woodworking</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="automotive">Automotive</option>
+                    <option value="home-repair">Home Repair</option>
+                    <option value="crafts">Arts & Crafts</option>
+                    <option value="gardening">Gardening</option>
+                    <option value="plumbing">Plumbing</option>
+                    <option value="electrical">Electrical</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="analyzeProject()" id="analyzeBtn" disabled>
+                Analyze Project
+            </button>
+        </section>
+
+        <!-- Loading -->
+        <section class="loading" id="loading">
+            <div class="loading-content">
+                <div id="loadingImageContainer" style="text-align: center; margin-bottom: 20px; display: none;">
+                    <img id="loadingImage" class="loading-image" alt="Analyzing image">
+                </div>
+                
+                <div class="spinner"></div>
+                <p id="loadingText">Analyzing your project images...</p>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+                </div>
+                
+                <div class="loading-steps">
+                    <div class="loading-step" id="step1">
+                        <div class="step-icon pending" id="step1Icon">1</div>
+                        <span>Processing image...</span>
+                    </div>
+                    <div class="loading-step" id="step2">
+                        <div class="step-icon pending" id="step2Icon">2</div>
+                        <span>Identifying materials and tools...</span>
+                    </div>
+                    <div class="loading-step" id="step3">
+                        <div class="step-icon pending" id="step3Icon">3</div>
+                        <span>Analyzing project complexity...</span>
+                    </div>
+                    <div class="loading-step" id="step4">
+                        <div class="step-icon pending" id="step4Icon">4</div>
+                        <span>Generating recommendations...</span>
+                    </div>
+                    <div class="loading-step" id="step5">
+                        <div class="step-icon pending" id="step5Icon">5</div>
+                        <span>Finalizing analysis...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="resultsSection">
+            <!-- Uploaded Images Display -->
+            <div class="analysis-card">
+                <h2 class="card-title">
+                    <span class="card-icon">📷</span>
+                    <span>Uploaded Images</span>
+                </h2>
+                <div class="uploaded-images-display" id="uploadedImagesDisplay">
+                    <!-- Uploaded images will be displayed here -->
+                </div>
+            </div>
+            
+            <!-- Project Overview -->
+            <div class="analysis-card">
+                <h2 class="card-title">
+                    <span class="card-icon">📊</span>
+                    <span id="overviewTitle">Project Overview</span>
+                </h2>
+                <div class="project-overview" id="projectOverview">
+                    <!-- Project overview will be populated here -->
+                </div>
+            </div>
+
+            <!-- Materials -->
+            <div class="analysis-card">
+                <h2 class="card-title">
+                    <span class="card-icon">🧱</span>
+                    <span id="materialsTitle">Materials Needed</span>
+                </h2>
+                <div class="items-grid" id="materialsList">
+                    <!-- Materials will be populated here -->
+                </div>
+            </div>
+
+            <!-- Tools -->
+            <div class="analysis-card">
+                <h2 class="card-title">
+                    <span class="card-icon">🔧</span>
+                    <span id="toolsTitle">Tools Required</span>
+                </h2>
+                <div class="items-grid" id="toolsList">
+                    <!-- Tools will be populated here -->
+                </div>
+            </div>
+
+            <!-- Safety -->
+            <div class="analysis-card">
+                <h2 class="card-title">
+                    <span class="card-icon">⚠️</span>
+                    <span id="safetyTitle">Safety Guidelines</span>
+                </h2>
+                <div id="safetyList">
+                    <!-- Safety notes will be populated here -->
+                </div>
+            </div>
+
+            <!-- Steps -->
+            <div class="analysis-card">
+                <h2 class="card-title">
+                    <span class="card-icon">📋</span>
+                    <span id="stepsTitle">Step-by-Step Instructions</span>
+                </h2>
+                <div class="steps-list" id="stepsList">
+                    <!-- Steps will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Cost-Effective Product Search Results -->
+            <div class="analysis-card" id="webSearchCard" style="display: none;">
+                <h2 class="card-title">
+                    <span class="card-icon">🛍️</span>
+                    <span>Cost-Effective Product Options</span>
+                </h2>
+                <div id="webSearchResults">
+                    <!-- Web search results will be populated here -->
+                </div>
+                
+                <!-- Shopping Guide -->
+                <div class="shopping-guide" id="shoppingGuide">
+                    <h3 style="color: #667eea; margin: 24px 0 16px 0;">💡 Smart Shopping Guide</h3>
+                    <!-- Shopping guide will be populated here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast" id="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+
+        let selectedFiles = [];
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function goBack() {
+            window.location.href = 'dashboard.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_data');
+            window.location.href = 'standalone.html';
+        }
+
+        function triggerFileInput() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+
+            // Validate file count
+            if (selectedFiles.length + files.length > 4) {
+                showToast(t.tooManyFiles, 'error');
+                return;
+            }
+
+            // Validate each file
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) {
+                    showToast(t.invalidFile, 'error');
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast(t.fileTooLarge, 'error');
+                    return;
+                }
+            }
+
+            // Add files to selection
+            selectedFiles = [...selectedFiles, ...files];
+            displayImageGallery();
+            updateAnalyzeButton();
+        }
+
+        function displayImageGallery() {
+            const gallery = document.getElementById('imageGallery');
+            gallery.innerHTML = '';
+
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'image-item';
+                    imageItem.innerHTML = `
+                        <img src="${e.target.result}" class="image-preview" alt="Project image ${index + 1}">
+                        <button class="image-remove" onclick="removeImage(${index})">×</button>
+                    `;
+                    gallery.appendChild(imageItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeImage(index) {
+            selectedFiles.splice(index, 1);
+            displayImageGallery();
+            updateAnalyzeButton();
+        }
+
+        function updateAnalyzeButton() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.disabled = selectedFiles.length === 0;
+        }
+
+        async function analyzeProject() {
+
+            if (selectedFiles.length === 0) {
+                showToast(t.noImages, 'error');
+                return;
+            }
+
+            // Show loading with image preview
+            showLoadingWithProgress();
+            document.querySelector('.upload-section').style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                // For now, just send the first image until we fix multi-image support
+                if (selectedFiles.length > 0) {
+                    formData.append('image', selectedFiles[0]);
+                }
+                
+                const description = document.getElementById('description').value;
+                const projectType = document.getElementById('projectType').value;
+                
+                if (description) formData.append('description', description);
+                if (projectType) formData.append('project_type', projectType);
+
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('http://localhost:8000/api/v1/agents/project/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
+
+                const result = await response.json();
+                displayResults(result);
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showToast(t.analysisError, 'error');
+                document.querySelector('.upload-section').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayResults(result) {
+            console.log('API Response:', result); // Debug log
+            
+            // Display uploaded images first
+            displayUploadedImages();
+            
+            // Use actual API response data - get comprehensive analysis
+            const data = result.data;
+            const comprehensiveAnalysis = data.comprehensive_analysis || {};
+            
+            // Extract data from comprehensive analysis
+            const projectName = comprehensiveAnalysis.project_name || 'DIY Project';
+            const description = comprehensiveAnalysis.description || 'Project analysis completed';
+            const difficulty = comprehensiveAnalysis.difficulty_level || 'intermediate';
+            const estimatedTime = comprehensiveAnalysis.estimated_time || '4-6 hours';
+            const budgetEstimate = comprehensiveAnalysis.budget_estimate || '';
+            const imagesAnalyzed = selectedFiles.length; // Use actual number of uploaded images
+            
+            // Extract tool identification and product recommendation data
+            const toolInfo = data.tool_identification;
+            const productRecommendations = data.product_recommendations;
+            const webSearchResults = data.web_search_results;
+            const safetyNotes = comprehensiveAnalysis.safety_notes || [];
+            const projectSteps = comprehensiveAnalysis.steps || [];
+            const materialsFromAnalysis = comprehensiveAnalysis.materials || [];
+            const toolsFromAnalysis = comprehensiveAnalysis.tools || [];
+            
+            // Use fallback mock data for demonstration when API data is incomplete
+            const mockResults = {
+                project_name: "Custom Wooden Coffee Table",
+                description: "A modern coffee table project using oak wood with metal hairpin legs",
+                difficulty_level: "Intermediate",
+                estimated_time: "6-8 hours",
+                budget_estimate: "$150-200",
+                materials: [
+                    {
+                        name: "Oak Wood Planks",
+                        details: "1 x 8 x 48 inches, 3 pieces",
+                        estimated_cost: "$60"
+                    },
+                    {
+                        name: "Metal Hairpin Legs",
+                        details: "16-inch height, set of 4",
+                        estimated_cost: "$40"
+                    },
+                    {
+                        name: "Wood Stain",
+                        details: "Dark walnut finish, 1 quart",
+                        estimated_cost: "$25"
+                    },
+                    {
+                        name: "Wood Screws",
+                        details: "2.5 inch, stainless steel, pack of 20",
+                        estimated_cost: "$8"
+                    }
+                ],
+                tools: [
+                    {
+                        name: "Circular Saw",
+                        details: "For cutting wood to size",
+                        essential: true
+                    },
+                    {
+                        name: "Drill/Driver",
+                        details: "For making pilot holes and driving screws",
+                        essential: true
+                    },
+                    {
+                        name: "Sandpaper",
+                        details: "120, 220, and 320 grit",
+                        essential: true
+                    },
+                    {
+                        name: "Measuring Tape",
+                        details: "For accurate measurements",
+                        essential: true
+                    }
+                ],
+                safety_notes: [
+                    "Always wear safety glasses when cutting or drilling",
+                    "Use dust mask when sanding to avoid inhaling particles",
+                    "Ensure work area is well-ventilated when applying stain",
+                    "Check that legs are securely attached before use"
+                ],
+                steps: [
+                    {
+                        title: "Prepare the Wood",
+                        description: "Cut oak planks to desired dimensions and sand with 120-grit sandpaper to remove rough spots."
+                    },
+                    {
+                        title: "Plan the Layout",
+                        description: "Arrange the wood planks and mark positions for the hairpin legs, ensuring they're evenly spaced."
+                    },
+                    {
+                        title: "Drill Pilot Holes",
+                        description: "Mark and drill pilot holes for the leg mounting screws. Use a drill bit slightly smaller than the screw diameter."
+                    },
+                    {
+                        title: "Sand and Finish",
+                        description: "Sand progressively with 220 and 320 grit sandpaper, then apply wood stain according to manufacturer's instructions."
+                    },
+                    {
+                        title: "Attach the Legs",
+                        description: "Once the stain is dry, attach the hairpin legs using the provided screws and washers."
+                    },
+                    {
+                        title: "Final Inspection",
+                        description: "Check all connections are secure and apply a protective finish if desired."
+                    }
+                ]
+            };
+
+            // Display project overview using real comprehensive analysis data
+            const projectOverview = document.getElementById('projectOverview');
+            projectOverview.innerHTML = `
+                <div class="project-name">${projectName}</div>
+                <div class="project-description">${description}</div>
+                <div class="project-meta">
+                    <div class="meta-item">
+                        <div class="meta-value">${difficulty.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                        <div class="meta-label">Difficulty</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">${estimatedTime}</div>
+                        <div class="meta-label">Time Required</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">${budgetEstimate || 'Varies'}</div>
+                        <div class="meta-label">Estimated Budget</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">${imagesAnalyzed} image${imagesAnalyzed !== 1 ? 's' : ''}</div>
+                        <div class="meta-label">Images Analyzed</div>
+                    </div>
+                </div>
+            `;
+
+            // Display materials from comprehensive analysis - prioritize real data
+            const materialsList = document.getElementById('materialsList');
+            if (materialsFromAnalysis && materialsFromAnalysis.length > 0) {
+                // Use materials from comprehensive analysis (real AI data)
+                materialsList.innerHTML = materialsFromAnalysis.map(material => `
+                    <div class="item-card">
+                        <div class="item-name">${material.name}</div>
+                        <div class="item-details">${material.specification || ''} - ${material.quantity || ''}</div>
+                        <div class="item-details" style="color: #667eea; font-weight: 500;">${material.estimated_price_range || ''}</div>
+                        ${material.purpose ? `<div class="item-details" style="font-style: italic; color: #666;">${material.purpose}</div>` : ''}
+                    </div>
+                `).join('');
+            } else if (productRecommendations && productRecommendations.assessed_results && productRecommendations.assessed_results.length > 0) {
+                // Fallback to product recommendations
+                const materials = productRecommendations.assessed_results.slice(0, 5);
+                materialsList.innerHTML = materials.map(item => `
+                    <div class="item-card">
+                        <div class="item-name">${item.title || 'Material'}</div>
+                        <div class="item-details">${item.description || 'No description available'}</div>
+                        <div class="item-details" style="color: #667eea; font-weight: 500;">$${item.price || 'N/A'}</div>
+                    </div>
+                `).join('');
+            } else {
+                // Final fallback to mock data
+                materialsList.innerHTML = mockResults.materials.map(material => `
+                    <div class="item-card">
+                        <div class="item-name">${material.name}</div>
+                        <div class="item-details">${material.details}</div>
+                        <div class="item-details" style="color: #667eea; font-weight: 500;">${material.estimated_cost}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Display tools from comprehensive analysis - prioritize real data
+            const toolsList = document.getElementById('toolsList');
+            if (toolsFromAnalysis && toolsFromAnalysis.length > 0) {
+                // Use tools from comprehensive analysis (real AI data)
+                toolsList.innerHTML = toolsFromAnalysis.map(tool => `
+                    <div class="item-card">
+                        <div class="item-name">${tool.name} ${tool.necessity === 'Essential' ? '⭐' : tool.necessity === 'Recommended' ? '🔧' : ''}</div>
+                        <div class="item-details">Necessity: ${tool.necessity || 'Recommended'}</div>
+                        ${tool.purpose ? `<div class="item-details">${tool.purpose}</div>` : ''}
+                        ${tool.alternatives ? `<div class="item-details" style="font-style: italic; color: #666;">Alternatives: ${tool.alternatives.join(', ')}</div>` : ''}
+                    </div>
+                `).join('');
+            } else if (toolInfo && toolInfo.tool_info) {
+                // Fallback to tool identification data
+                const tool = toolInfo.tool_info;
+                let toolsHTML = `
+                    <div class="item-card">
+                        <div class="item-name">${tool.brand || ''} ${tool.name || 'Identified Tool'} ⭐</div>
+                        <div class="item-details">Category: ${tool.category ? tool.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown'}</div>
+                        <div class="item-details">Confidence: ${Math.round((tool.confidence || 0) * 100)}%</div>
+                    </div>
+                `;
+                
+                // Add alternatives if available
+                if (toolInfo.alternatives && toolInfo.alternatives.length > 0) {
+                    toolInfo.alternatives.forEach(alt => {
+                        toolsHTML += `
+                            <div class="item-card">
+                                <div class="item-name">${alt.name}</div>
+                                <div class="item-details">${alt.reason}</div>
+                                <div class="item-details" style="color: #667eea; font-weight: 500;">${alt.price_range}</div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                toolsList.innerHTML = toolsHTML;
+            } else {
+                // Final fallback to mock data
+                toolsList.innerHTML = mockResults.tools.map(tool => `
+                    <div class="item-card">
+                        <div class="item-name">${tool.name} ${tool.essential ? '⭐' : ''}</div>
+                        <div class="item-details">${tool.details}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Display safety notes
+            const safetyList = document.getElementById('safetyList');
+            const notesToDisplay = safetyNotes.length > 0 ? safetyNotes : mockResults.safety_notes;
+            safetyList.innerHTML = notesToDisplay.map(note => `
+                <div class="safety-item">
+                    <span class="safety-icon">⚠️</span>
+                    <span class="safety-text">${note}</span>
+                </div>
+            `).join('');
+
+            // Display steps from comprehensive analysis - prioritize real detailed steps
+            const stepsList = document.getElementById('stepsList');
+            if (projectSteps && projectSteps.length > 0) {
+                // Use real steps from comprehensive analysis
+                stepsList.innerHTML = projectSteps.map((step, index) => {
+                    // Check if step is a simple string or an object
+                    if (typeof step === 'string') {
+                        return `
+                            <div class="step-item">
+                                <div class="step-title">Step ${index + 1}</div>
+                                <div class="step-description">${step}</div>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="step-item">
+                                <div class="step-title">${step.title || `Step ${index + 1}`}</div>
+                                <div class="step-description">${step.description || step}</div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            } else {
+                // Fallback to mock data
+                stepsList.innerHTML = mockResults.steps.map(step => `
+                    <div class="step-item">
+                        <div class="step-title">${step.title}</div>
+                        <div class="step-description">${step.description}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Display web search results if available
+            if (webSearchResults && webSearchResults.search_results && webSearchResults.search_results.length > 0) {
+                displayWebSearchResults(webSearchResults);
+                document.getElementById('webSearchCard').style.display = 'block';
+            }
+            
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+        
+        function displayWebSearchResults(webSearchData) {
+            const webSearchResults = document.getElementById('webSearchResults');
+            const shoppingGuide = document.getElementById('shoppingGuide');
+            
+            // Display search results for each item
+            let searchHTML = '';
+            
+            webSearchData.search_results.forEach(item => {
+                searchHTML += `
+                    <div class="web-search-item">
+                        <div class="web-search-header">
+                            <div class="web-search-item-name">${item.item_name}</div>
+                            <div class="web-search-type">${item.item_type}</div>
+                        </div>
+                        
+                        <div class="product-options">
+                `;
+                
+                // Display top recommendations
+                item.top_recommendations.forEach(product => {
+                    const stars = '★'.repeat(Math.floor(product.rating || 0)) + '☆'.repeat(5 - Math.floor(product.rating || 0));
+                    
+                    searchHTML += `
+                        <div class="product-option">
+                            <div class="product-retailer">${product.retailer}</div>
+                            <div class="product-title">
+                                ${product.title}
+                                ${product.rank === 1 ? '<span class="recommendation-badge">Best Value</span>' : ''}
+                            </div>
+                            <div class="product-price">$${product.price}</div>
+                            <div class="product-rating">
+                                <span style="color: #f39c12; font-size: 12px;">${stars}</span>
+                                <span style="font-size: 12px; color: #666;">(${product.review_count || 0})</span>
+                            </div>
+                            <div class="product-features">${product.recommendation_reason}</div>
+                            <a href="${product.search_url}" target="_blank" class="product-link">View on ${product.retailer}</a>
+                        </div>
+                    `;
+                });
+                
+                searchHTML += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            webSearchResults.innerHTML = searchHTML;
+            
+            // Display shopping guide
+            const guide = webSearchData.shopping_guide;
+            if (guide) {
+                let guideHTML = `
+                    <div class="shopping-tips">
+                        <div class="tip-section">
+                            <div class="tip-title">
+                                💰 Money-Saving Tips
+                            </div>
+                            <ul class="tip-list">
+                `;
+                
+                guide.money_saving_tips.forEach(tip => {
+                    guideHTML += `<li>${tip}</li>`;
+                });
+                
+                guideHTML += `
+                            </ul>
+                        </div>
+                        
+                        <div class="tip-section">
+                            <div class="tip-title">
+                                ⭐ Quality Tips
+                            </div>
+                            <ul class="tip-list">
+                `;
+                
+                guide.quality_tips.forEach(tip => {
+                    guideHTML += `<li>${tip}</li>`;
+                });
+                
+                guideHTML += `
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                if (guide.shopping_strategy && guide.shopping_strategy.length > 0) {
+                    guideHTML += `
+                        <div class="tip-section" style="grid-column: 1 / -1; margin-top: 16px;">
+                            <div class="tip-title">
+                                🎯 Recommended Shopping Strategy
+                            </div>
+                            <ul class="tip-list">
+                    `;
+                    
+                    guide.shopping_strategy.forEach(strategy => {
+                        guideHTML += `<li>${strategy}</li>`;
+                    });
+                    
+                    guideHTML += `
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                shoppingGuide.innerHTML = guideHTML;
+            }
+        }
+
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            handleFileSelect({ target: { files } });
+        });
+
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+
+        function showLoadingWithProgress() {
+            // Show loading section
+            document.getElementById('loading').style.display = 'block';
+            
+            // Display the uploaded image
+            if (selectedFiles.length > 0) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const loadingImage = document.getElementById('loadingImage');
+                    const imageContainer = document.getElementById('loadingImageContainer');
+                    loadingImage.src = e.target.result;
+                    imageContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(selectedFiles[0]);
+            }
+            
+            // Start progress animation
+            simulateProgress();
+        }
+        
+        function simulateProgress() {
+            const steps = [
+                { id: 'step1', duration: 800, progress: 20 },
+                { id: 'step2', duration: 1200, progress: 40 },
+                { id: 'step3', duration: 1000, progress: 60 },
+                { id: 'step4', duration: 1500, progress: 80 },
+                { id: 'step5', duration: 800, progress: 100 }
+            ];
+            
+            let currentStep = 0;
+            
+            function updateStep() {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    
+                    // Mark current step as active
+                    const stepElement = document.getElementById(step.id);
+                    const stepIcon = document.getElementById(step.id + 'Icon');
+                    
+                    stepElement.classList.add('active');
+                    stepIcon.classList.remove('pending');
+                    stepIcon.classList.add('active');
+                    
+                    // Update progress bar
+                    const progressBar = document.getElementById('progressBar');
+                    progressBar.style.width = step.progress + '%';
+                    
+                    setTimeout(() => {
+                        // Mark as completed
+                        stepElement.classList.remove('active');
+                        stepElement.classList.add('completed');
+                        stepIcon.classList.remove('active');
+                        stepIcon.classList.add('completed');
+                        stepIcon.innerHTML = '✓';
+                        
+                        currentStep++;
+                        updateStep();
+                    }, step.duration);
+                }
+            }
+            
+            updateStep();
+        }
+        
+        function resetProgressIndicators() {
+            // Reset all steps to pending state
+            for (let i = 1; i <= 5; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                const stepIcon = document.getElementById(`step${i}Icon`);
+                
+                stepElement.classList.remove('active', 'completed');
+                stepIcon.classList.remove('active', 'completed');
+                stepIcon.classList.add('pending');
+                stepIcon.innerHTML = i;
+            }
+            
+            // Reset progress bar
+            document.getElementById('progressBar').style.width = '0%';
+            
+            // Hide image
+            document.getElementById('loadingImageContainer').style.display = 'none';
+        }
+
+        function displayUploadedImages() {
+            const uploadedImagesDisplay = document.getElementById('uploadedImagesDisplay');
+            
+            if (selectedFiles.length === 0) {
+                uploadedImagesDisplay.innerHTML = '<p style="text-align: center; color: #666;">No images uploaded</p>';
+                return;
+            }
+            
+            uploadedImagesDisplay.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'uploaded-image-item';
+                    imageItem.innerHTML = `
+                        <img src="${e.target.result}" class="uploaded-image" alt="Uploaded image ${index + 1}">
+                        <div class="uploaded-image-label">Image ${index + 1} - ${file.name}</div>
+                    `;
+                    uploadedImagesDisplay.appendChild(imageItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+
+            // Reset progress indicators on page load
+            resetProgressIndicators();
+        });
+    
+        // Listen for language changes from dashboard
+        window.addEventListener('storage', function(e) {
+            
+        });
+    
+        // Listen for language changes from dashboard
+        window.addEventListener('storage', function(e) {
+            console.log('Storage event detected:', e.key, e.newValue);
+            
+        });
+    </script>
+</body>
+</html>

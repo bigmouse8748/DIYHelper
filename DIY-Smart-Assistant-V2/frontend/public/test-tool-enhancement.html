@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tool Identification Enhancement</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+        .success { background: #eeffee; color: #4caf50; }
+        .error { background: #ffeeee; color: #d32f2f; }
+        button { margin: 5px; padding: 8px 16px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1565c0; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Tool Identification Enhancement Test</h1>
+    <p>Testing the new progress bar and persistent image display features</p>
+
+    <div class="test-section">
+        <h3>✨ New Features Added:</h3>
+        <ul>
+            <li><strong>Progress Bar:</strong> Shows analysis progress with step-by-step updates</li>
+            <li><strong>Persistent Image Display:</strong> Uploaded image remains visible throughout analysis</li>
+            <li><strong>Enhanced UX:</strong> Similar to Project Analysis page experience</li>
+            <li><strong>Multilingual Support:</strong> English and Chinese translations for new elements</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>🧪 Test Instructions:</h3>
+        <ol>
+            <li>Navigate to the Tool Identification page</li>
+            <li>Upload a tool image</li>
+            <li>Click "Analyze Tool" and observe:</li>
+            <ul>
+                <li>Progress bar appears with percentage and step descriptions</li>
+                <li>Uploaded image remains visible in a separate section</li>
+                <li>Progress updates smoothly from 0% to 100%</li>
+                <li>Image stays visible in results section</li>
+            </ul>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>🚀 Quick Access:</h3>
+        <button onclick="window.open('http://localhost:8080/tool-identification.html', '_blank')">
+            Open Tool Identification Page
+        </button>
+        <button onclick="window.open('http://localhost:8080/project-analysis.html', '_blank')">
+            Compare with Project Analysis
+        </button>
+    </div>
+
+    <div class="test-section">
+        <h3>📋 Expected Behavior:</h3>
+        <div class="result">
+            <p><strong>Before Analysis:</strong></p>
+            <ul>
+                <li>Upload area visible</li>
+                <li>No progress bar or uploaded image section</li>
+            </ul>
+            
+            <p><strong>After Image Upload:</strong></p>
+            <ul>
+                <li>Preview section shows</li>
+                <li>Uploaded image section appears with the image</li>
+                <li>Analyze button available</li>
+            </ul>
+            
+            <p><strong>During Analysis:</strong></p>
+            <ul>
+                <li>Progress bar section appears</li>
+                <li>Progress updates: 10% → 30% → 60% → 80% → 95% → 100%</li>
+                <li>Step descriptions change: "Uploading image..." → "Processing image..." → etc.</li>
+                <li>Uploaded image remains visible throughout</li>
+            </ul>
+            
+            <p><strong>After Analysis:</strong></p>
+            <ul>
+                <li>Progress bar hides</li>
+                <li>Results section shows</li>
+                <li>Uploaded image still visible</li>
+                <li>Tool identification and purchase recommendations displayed</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>🎯 Success Criteria:</h3>
+        <div class="result success">
+            ✅ Progress bar shows and updates smoothly<br>
+            ✅ Uploaded image persists throughout the entire flow<br>
+            ✅ Step descriptions update correctly<br>
+            ✅ Results page maintains image visibility<br>
+            ✅ Language switching works for new elements<br>
+            ✅ Reset functionality clears all new elements<br>
+            ✅ Overall UX matches Project Analysis page quality
+        </div>
+    </div>
+
+    <script>
+        // Auto-open tool identification page for testing
+        setTimeout(() => {
+            if (confirm('Open Tool Identification page for testing?')) {
+                window.open('http://localhost:8080/tool-identification.html', '_blank');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

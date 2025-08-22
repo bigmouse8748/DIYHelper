@@ -85,11 +85,29 @@ async def analyze_project(
                 buffer.write(content)
             image_paths.append(file_path)
         
-        # 构建项目分析数据
-        analysis_data = {
-            "project_name": "DIY Wooden Table Project",
-            "description": f"Based on analysis of {len(images)} uploaded images, this is a {project_type or 'woodworking'} DIY project. {description}",
-            "materials": [
+        # 使用Vision AI分析第一张图片
+        import base64
+        from services.openai_vision_service import vision_service
+        
+        # 处理第一张图片进行AI分析
+        if images:
+            image_content = await images[0].read()
+            # 重置文件指针
+            await images[0].seek(0)
+            
+            # 转换为base64
+            image_base64 = base64.b64encode(image_content).decode('utf-8')
+            
+            # 使用Vision AI分析
+            logger.info("Starting AI vision analysis...")
+            analysis_data = await vision_service.analyze_diy_project(image_base64, description)
+            logger.info(f"Vision analysis completed: {analysis_data.get('project_name', 'Unknown')}")
+        else:
+            # 构建项目分析数据(fallback)
+            analysis_data = {
+                "project_name": "DIY Wooden Table Project",
+                "description": f"Based on analysis of {len(images)} uploaded images, this is a {project_type or 'woodworking'} DIY project. {description}",
+                "materials": [
                 {"name": "Pine Wood Board", "specification": "3/4 inch thick", "quantity": "2 pieces", "estimated_price_range": "$25-40"},
                 {"name": "Wood Screws", "specification": "1.5 inch long", "quantity": "20 pieces", "estimated_price_range": "$3-5"},
                 {"name": "Wood Glue", "specification": "Strong adhesive", "quantity": "1 bottle", "estimated_price_range": "$4-8"},
@@ -107,23 +125,23 @@ async def analyze_project(
                 {"name": "Clamps", "necessity": "Recommended"},
                 {"name": "Level", "necessity": "Recommended"}
             ],
-            "difficulty_level": "medium",
-            "estimated_time": "4-6 hours",
-            "safety_notes": ["Wear safety glasses at all times", "Use tools safely and follow manufacturer instructions", "Keep workspace clean and well-organized", "Ensure adequate ventilation when using stains or adhesives"],
-            "steps": [
-                "1. Safety First: Put on safety glasses and work gloves. Ensure your workspace is well-ventilated and clean.",
-                "2. Measure and Plan: Using measuring tape, carefully measure and mark all cut lines on the wood boards. Double-check all measurements.",
-                "3. Cut the Wood: Use a circular saw or miter saw to cut the wood pieces according to your measurements. Sand cut edges smooth.",
-                "4. Pre-drill Holes: Use the power drill to pre-drill pilot holes for screws to prevent wood splitting.",
-                "5. Apply Wood Glue: Apply a thin, even layer of wood glue to joining surfaces. Work quickly as glue sets fast.",
-                "6. Assemble Frame: Clamp pieces together and secure with wood screws. Use level to ensure everything is square.",
-                "7. Initial Sanding: Sand all surfaces starting with 120-grit, then 220-grit sandpaper for smooth finish.",
-                "8. Clean Surface: Remove all dust with tack cloth or compressed air before staining.",
-                "9. Apply Stain: Use brush or cloth to apply wood stain evenly. Work with the grain, not against it.",
-                "10. Final Assembly: Once stain is dry, complete any final assembly and add any hardware or accessories.",
-                "11. Quality Check: Inspect all joints, sand any rough spots, and ensure the project is sturdy and safe to use."
-            ]
-        }
+                "difficulty_level": "medium",
+                "estimated_time": "4-6 hours",
+                "safety_notes": ["Wear safety glasses at all times", "Use tools safely and follow manufacturer instructions", "Keep workspace clean and well-organized", "Ensure adequate ventilation when using stains or adhesives"],
+                "steps": [
+                    "1. Safety First: Put on safety glasses and work gloves. Ensure your workspace is well-ventilated and clean.",
+                    "2. Measure and Plan: Using measuring tape, carefully measure and mark all cut lines on the wood boards. Double-check all measurements.",
+                    "3. Cut the Wood: Use a circular saw or miter saw to cut the wood pieces according to your measurements. Sand cut edges smooth.",
+                    "4. Pre-drill Holes: Use the power drill to pre-drill pilot holes for screws to prevent wood splitting.",
+                    "5. Apply Wood Glue: Apply a thin, even layer of wood glue to joining surfaces. Work quickly as glue sets fast.",
+                    "6. Assemble Frame: Clamp pieces together and secure with wood screws. Use level to ensure everything is square.",
+                    "7. Initial Sanding: Sand all surfaces starting with 120-grit, then 220-grit sandpaper for smooth finish.",
+                    "8. Clean Surface: Remove all dust with tack cloth or compressed air before staining.",
+                    "9. Apply Stain: Use brush or cloth to apply wood stain evenly. Work with the grain, not against it.",
+                    "10. Final Assembly: Once stain is dry, complete any final assembly and add any hardware or accessories.",
+                    "11. Quality Check: Inspect all joints, sand any rough spots, and ensure the project is sturdy and safe to use."
+                ]
+            }
         
         # 使用智能推荐Agent生成产品推荐
         try:

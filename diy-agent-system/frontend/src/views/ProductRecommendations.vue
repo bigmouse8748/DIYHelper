@@ -337,10 +337,10 @@ let searchTimeout: NodeJS.Timeout | null = null
 const pageSize = ref(12)
 const currentPage = ref(1)
 
-// API base URL - use backend URL directly since proxy isn't working on port 3003
+// API base URL - use working backend for synchronized product data  
 const API_BASE = import.meta.env.PROD ? 
   (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002') : 
-  'http://localhost:8002' // Direct backend URL for development
+  'http://localhost:8002' // Use working backend with products data
 
 // Lifecycle
 onMounted(async () => {

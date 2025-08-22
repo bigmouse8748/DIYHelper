@@ -1,14 +1,15 @@
 /**
- * Tool Identification API Service
+ * Tool Identification API Service - Cognito Version
  */
 import axios from 'axios'
+import { useCognitoAuthStore } from '@/stores/cognitoAuth'
 
-// Use backend URL directly since proxy isn't working on port 3003
+// Use Cognito backend for tool identification (now with fixed AUTH)
 const API_BASE = import.meta.env.PROD ? 
-  (import.meta.env.VITE_API_URL || 'http://localhost:8002') : 
-  'http://localhost:8002' // Direct backend URL for development
+  (import.meta.env.VITE_API_URL || 'http://localhost:8001') : 
+  'http://localhost:8001' // Cognito backend on port 8001
 
-// Create axios instance with auth interceptor
+// Create axios instance 
 const apiClient = axios.create({
   baseURL: API_BASE,
   headers: {
@@ -16,12 +17,28 @@ const apiClient = axios.create({
   }
 })
 
-// Add auth token to requests
+// Add Cognito ID token to requests (optional)
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+  async (config) => {
+    try {
+      const authStore = useCognitoAuthStore()
+      
+      // Only add token if user is authenticated
+      if (authStore.isAuthenticated) {
+        const token = await authStore.getIdToken()
+        
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`
+          console.log('🔗 API Request with authentication:', config.url)
+        } else {
+          console.log('⚠️ Authenticated user but no token available:', config.url)
+        }
+      } else {
+        console.log('📱 API Request as guest user:', config.url)
+      }
+    } catch (error) {
+      console.error('Failed to get auth token, proceeding as guest:', error)
+      // Continue without token - backend supports guest access
     }
     return config
   },
@@ -32,36 +49,41 @@ apiClient.interceptors.request.use(
 
 // Handle auth errors
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', {
+      url: response.config.url,
+      status: response.status
+    })
+    return response
+  },
   (error) => {
-    console.log('=== API DEBUG: Response interceptor triggered ===')
-    console.log('Error status:', error.response?.status)
-    console.log('Error URL:', error.config?.url)
-    console.log('Full error:', error)
+    console.error('❌ API Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      message: error.response?.data?.detail || error.message
+    })
     
     if (error.response?.status === 401) {
-      console.log('=== API DEBUG: 401 ERROR - Redirecting to login ===')
-      // Token expired or invalid
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user_info')
-      window.location.href = '/login'
+      console.log('🚫 401 Unauthorized - token may be expired, but backend supports guest access')
+      // For Tool Identification, 401 errors shouldn't happen with optional auth
+      // This indicates a backend configuration issue
     }
     return Promise.reject(error)
   }
 )
 
 /**
- * Identify tool from image
+ * Identify tool from image using Cognito backend
  */
 export async function identifyToolAPI(
   imageFile: File,
   includeAlternatives: boolean = true
 ): Promise<any> {
+  console.log('🔍 Starting tool identification...')
   const formData = new FormData()
-  formData.append('image', imageFile)
-  formData.append('include_alternatives', String(includeAlternatives))
-
-  const response = await apiClient.post('/api/identify-tool', formData, {
+  formData.append('images', imageFile)  // Backend expects 'images' not 'image'
+  
+  const response = await apiClient.post('/api/tool-identification/analyze', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -70,10 +92,11 @@ export async function identifyToolAPI(
 }
 
 /**
- * Get identification history
+ * Get identification history from Cognito backend
  */
 export async function getIdentificationHistory(limit: number = 10): Promise<any> {
-  const response = await apiClient.get('/api/identification-history', {
+  console.log('📚 Fetching identification history...')
+  const response = await apiClient.get('/api/tool-identification/history', {
     params: { limit }
   })
   return response.data
@@ -83,48 +106,8 @@ export async function getIdentificationHistory(limit: number = 10): Promise<any>
  * Delete identification from history
  */
 export async function deleteIdentification(identificationId: string): Promise<any> {
-  const response = await apiClient.delete(`/api/identification-history/${identificationId}`)
-  return response.data
-}
-
-/**
- * User authentication APIs
- */
-export async function register(email: string, username: string, password: string): Promise<any> {
-  const response = await apiClient.post('/api/auth/register', {
-    email,
-    username,
-    password
-  })
-  return response.data
-}
-
-export async function login(username: string, password: string): Promise<any> {
-  const formData = new FormData()
-  formData.append('username', username)
-  formData.append('password', password)
-
-  const response = await apiClient.post('/api/auth/login', formData, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
-  })
-  return response.data
-}
-
-export async function getCurrentUser(): Promise<any> {
-  const response = await apiClient.get('/api/auth/me')
-  return response.data
-}
-
-/**
- * Membership APIs
- */
-export async function upgradeMembership(level: 'premium' | 'pro'): Promise<any> {
-  const formData = new FormData()
-  formData.append('level', level)
-  
-  const response = await apiClient.post('/api/membership/upgrade', formData)
+  console.log('🗑️ Deleting identification:', identificationId)
+  const response = await apiClient.delete(`/api/tool-identification/history/${identificationId}`)
   return response.data
 }
 
