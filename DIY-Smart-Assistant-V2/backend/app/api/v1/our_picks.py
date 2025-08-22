@@ -7,9 +7,11 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Form, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
+import httpx
 
 from ...database import get_db
 from ...models.user import User
@@ -614,8 +616,10 @@ async def update_product(
         # Update product fields
         product.title = title
         product.description = description
-        product.brand = brand
-        product.model = model
+        if brand is not None:
+            product.brand = brand
+        if model is not None:
+            product.model = model
         
         # Handle enum fields
         try:
@@ -628,11 +632,13 @@ async def update_product(
         except ValueError:
             product.retailer = Retailer.other
         
-        product.price = price
+        if price is not None:
+            product.price = price
         product.original_price = original_price
         product.rating = rating if rating is not None and 0 <= rating <= 5 else None
         product.review_count = review_count if review_count is not None and review_count >= 0 else None
-        product.image_url = image_url
+        if image_url is not None:
+            product.image_url = image_url
         product.affiliate_link = affiliate_link
         product.suitable_projects = json.dumps(projects_list)
         product.is_featured = is_featured
@@ -695,3 +701,93 @@ async def delete_product(
         await db.rollback()
         logger.error(f"Error deleting product {product_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to delete product: {str(e)}")
+
+
+@router.post("/manual-create")
+async def create_product_manually(
+    title: str = Form(...),
+    description: str = Form(...),
+    brand: Optional[str] = Form(None),
+    model: Optional[str] = Form(None),
+    category: str = Form(...),
+    retailer: str = Form(...),
+    price: Optional[float] = Form(None),
+    original_price: Optional[float] = Form(None),
+    rating: Optional[float] = Form(None),
+    review_count: Optional[int] = Form(None),
+    image_url: Optional[str] = Form(None),
+    affiliate_link: str = Form(...),
+    suitable_projects: str = Form(default='["general"]'),
+    is_featured: bool = Form(default=False),
+    admin_notes: Optional[str] = Form(None),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Admin endpoint: Create a product manually without analysis
+    """
+    try:
+        logger.info(f"Admin {current_user.email} creating product manually: {title}")
+        
+        # Validate and parse suitable_projects
+        try:
+            projects_list = json.loads(suitable_projects) if suitable_projects else ["general"]
+            if not isinstance(projects_list, list):
+                projects_list = ["general"]
+        except:
+            projects_list = ["general"]
+        
+        # Create product directly
+        product = Product(
+            title=title,
+            brand=brand or "Unknown",
+            model=model,
+            category=category,
+            description=description,
+            price=price or 0.0,
+            original_price=original_price,
+            retailer=retailer,
+            affiliate_link=affiliate_link,
+            image_url=image_url,
+            rating=rating if rating is not None and 0 <= rating <= 5 else None,
+            review_count=review_count if review_count is not None and review_count >= 0 else None,
+            suitable_projects=json.dumps(projects_list),
+            admin_notes=admin_notes,
+            is_featured=is_featured,
+            is_active=True,
+            in_stock=True,
+            quality_score=4.0  # Default quality score
+        )
+        
+        db.add(product)
+        await db.commit()
+        await db.refresh(product)
+        
+        logger.info(f"Admin {current_user.email} created product {product.id} manually")
+        
+        return {
+            "success": True,
+            "product_id": product.id,
+            "message": "Product created successfully",
+            "product": product.to_dict()
+        }
+        
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error creating product manually: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create product: {str(e)}")
+
+
+@router.get("/image-proxy")
+async def proxy_product_image(url: str):
+    """
+    Proxy images to avoid CORS issues and provide fallback for broken images
+    """
+    logger.info(f"Image proxy requested for URL: {url}")
+    
+    # Just redirect to the URL for now - test the endpoint works
+    return Response(
+        content="",
+        status_code=302,
+        headers={"Location": url}
+    )

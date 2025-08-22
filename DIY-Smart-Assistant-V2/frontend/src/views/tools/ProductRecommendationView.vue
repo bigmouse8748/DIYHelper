@@ -20,7 +20,7 @@
             label-position="top"
             size="large"
           >
-            <el-form-item :label=""Text"" prop="projectType">
+            <el-form-item label="Project Type" prop="projectType">
               <el-select v-model="projectForm.projectType" style="width: 100%">
                 <el-option
                   v-for="(label, value) in projectTypes"
@@ -31,7 +31,7 @@
               </el-select>
             </el-form-item>
             
-            <el-form-item :label=""Text"" prop="budgetRange">
+            <el-form-item label="Budget Range" prop="budgetRange">
               <el-select v-model="projectForm.budgetRange" style="width: 100%">
                 <el-option
                   v-for="(label, value) in budgetRanges"
@@ -42,7 +42,7 @@
               </el-select>
             </el-form-item>
             
-            <el-form-item :label=""Text"" prop="skillLevel">
+            <el-form-item label="Skill Level" prop="skillLevel">
               <el-select v-model="projectForm.skillLevel" style="width: 100%">
                 <el-option
                   v-for="(label, value) in skillLevels"
@@ -53,21 +53,21 @@
               </el-select>
             </el-form-item>
             
-            <el-form-item :label=""Text"">
+            <el-form-item label="Materials Needed">
               <el-input
                 v-model="projectForm.materials"
                 type="textarea"
                 :rows="3"
-                :placeholder=""Text""
+                placeholder="List materials you need for your project..."
               />
             </el-form-item>
             
-            <el-form-item :label=""Text"">
+            <el-form-item label="Tools Needed">
               <el-input
                 v-model="projectForm.toolsNeeded"
                 type="textarea"
                 :rows="3"
-                :placeholder=""Text""
+                placeholder="List tools you need for your project..."
               />
             </el-form-item>
             
@@ -80,7 +80,7 @@
                 @click="getRecommendations"
               >
                 <el-icon><ShoppingBag /></el-icon>
-                Text
+                Get Recommendations
               </el-button>
             </el-form-item>
           </el-form>
@@ -142,7 +142,7 @@
           <!-- Recommendations -->
           <el-card class="recommendations-card">
             <template #header>
-              <h3>Text</h3>
+              <h3>Product Recommendations</h3>
             </template>
             
             <el-row :gutter="16">
@@ -191,7 +191,7 @@
           <!-- Shopping Tips -->
           <el-card class="tips-card">
             <template #header>
-              <h3>Text</h3>
+              <h3>Shopping Tips</h3>
             </template>
             
             <ul class="tips-list">
@@ -205,7 +205,7 @@
           <!-- Cost Breakdown -->
           <el-card v-if="recommendationResult.total_estimated_cost" class="cost-card">
             <template #header>
-              <h3>Text</h3>
+              <h3>Cost Breakdown</h3>
             </template>
             
             <el-descriptions :column="2" border>
@@ -278,23 +278,23 @@ const projectForm = reactive({
 })
 
 const projectTypes = computed(() => ({
-  general: t('productRecommendation.projectTypes.general'),
-  woodworking: t('productRecommendation.projectTypes.woodworking'),
-  electronics: t('productRecommendation.projectTypes.electronics'),
-  plumbing: t('productRecommendation.projectTypes.plumbing'),
-  painting: t('productRecommendation.projectTypes.painting')
+  general: 'General DIY',
+  woodworking: 'Woodworking',
+  electronics: 'Electronics',
+  plumbing: 'Plumbing',
+  painting: 'Painting'
 }))
 
 const budgetRanges = computed(() => ({
-  low: t('productRecommendation.budgetRanges.low'),
-  medium: t('productRecommendation.budgetRanges.medium'),
-  high: t('productRecommendation.budgetRanges.high')
+  low: 'Under $100',
+  medium: '$100 - $500',
+  high: 'Over $500'
 }))
 
 const skillLevels = computed(() => ({
-  beginner: t('productRecommendation.skillLevels.beginner'),
-  intermediate: t('productRecommendation.skillLevels.intermediate'),
-  expert: t('productRecommendation.skillLevels.expert')
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  expert: 'Expert'
 }))
 
 const rules: FormRules = {

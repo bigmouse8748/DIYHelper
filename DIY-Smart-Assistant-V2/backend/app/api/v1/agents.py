@@ -3,8 +3,9 @@ Agents API endpoints
 """
 
 import logging
+import asyncio
 from typing import Any, Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -29,9 +30,16 @@ router = APIRouter()
 @router.options("/project/analyze")
 @router.options("/admin-product-analysis/analyze")
 @router.options("/smart-tool-finder/chat")
+@router.options("/available")
 async def options_handler():
     """Handle CORS preflight requests"""
     return {"message": "OK"}
+
+@router.post("/project/test")
+async def test_project_endpoint():
+    """Simple test endpoint to verify routing works"""
+    logger.info("TEST ENDPOINT HIT!")
+    return {"message": "Test endpoint works", "success": True}
 
 # Initialize and register agents
 tool_agent = ToolIdentificationAgent()
@@ -56,33 +64,42 @@ async def identify_tool(
 ) -> Any:
     """Identify a tool from an uploaded image"""
     
+    logger.info(f"Tool identification request received. File: {image.filename}, Size: {image.size} bytes")
+    
     # Check file type
-    if not image.content_type.startswith("image/"):
+    if not image.content_type or not image.content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image"
+            detail="File must be an image (JPG, PNG, etc.)"
         )
     
     # Check file size (max 10MB)
-    if image.size > 10 * 1024 * 1024:
+    if image.size and image.size > 10 * 1024 * 1024:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image file too large (max 10MB)"
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image file too large (max 10MB). Please compress your image."
         )
     
     try:
         # Save image temporarily
+        logger.info("Reading image data...")
         image_data = await image.read()
+        logger.info(f"Image data read successfully: {len(image_data)} bytes")
         
-        # Execute tool identification
-        result = await agent_manager.execute_task(
-            "tool_identification",
-            {
-                "image_data": image_data,
-                "image_path": image.filename,
-                "include_alternatives": include_alternatives
-            }
+        # Execute tool identification with timeout
+        logger.info("Starting AI tool identification...")
+        result = await asyncio.wait_for(
+            agent_manager.execute_task(
+                "tool_identification",
+                {
+                    "image_data": image_data,
+                    "image_path": image.filename,
+                    "include_alternatives": include_alternatives
+                }
+            ),
+            timeout=100.0  # 100 second timeout
         )
+        logger.info("Tool identification completed successfully")
         
         if not result.success:
             raise HTTPException(
@@ -103,12 +120,35 @@ async def identify_tool(
             "execution_time": result.execution_time
         }
         
+    except asyncio.TimeoutError:
+        logger.error("Tool identification timed out after 100 seconds")
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="AI analysis timed out. The service may be experiencing high load. Please try again with a smaller image or retry later."
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f"Tool identification error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        
+        # Handle specific error types
+        error_message = str(e)
+        if "timeout" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                detail="AI analysis timed out. Please try again."
+            )
+        elif "rate limit" in error_message.lower() or "quota" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="AI service rate limit exceeded. Please try again later."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Tool identification service temporarily unavailable. Please try again later."
+            )
 
 
 @router.post("/admin-product-analysis/analyze")
@@ -175,7 +215,7 @@ async def analyze_product_for_admin(
 
 @router.post("/project/analyze")
 async def analyze_project(
-    image: UploadFile = File(...),
+    images: List[UploadFile] = File(...),
     description: str = Form(None),
     project_type: str = Form("general"),
     budget_range: str = Form("medium"),
@@ -184,29 +224,26 @@ async def analyze_project(
 ) -> Any:
     """Analyze a complete DIY project with multiple images"""
     
-    try:
-        logger.info(f"Starting project analysis - received image: {image.filename}")
-        logger.info(f"Description: {description}, project_type: {project_type}")
-    except Exception as e:
-        logger.error(f"Error in initial logging: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error processing request: {str(e)}"
-        )
-    
-    # Validate image
-    if not image.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File {image.filename} is not an image"
-        )
+    logger.info("PROJECT ANALYSIS: Endpoint hit!")
+    logger.info(f"PROJECT ANALYSIS: Received {len(images)} images")
+    logger.info(f"PROJECT ANALYSIS: Description={description}, project_type={project_type}, budget_range={budget_range}")
     
     try:
-        # Process image
-        image_data = await image.read()
-        images_data = [image_data]  # Put in list for agent compatibility
+        # Validate images
+        for i, image in enumerate(images):
+            if not image.content_type.startswith("image/"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File {image.filename} (image {i+1}) is not an image"
+                )
         
-        logger.info(f"Processed image for project analysis: {len(image_data)} bytes")
+        # Process all images
+        images_data = []
+        for image in images:
+            image_data = await image.read()
+            images_data.append(image_data)
+        
+        logger.info(f"PROJECT ANALYSIS: Processed {len(images_data)} images for project analysis")
         
         # Use dedicated project analysis agent
         project_result = await agent_manager.execute_task(

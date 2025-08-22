@@ -20,17 +20,24 @@
             :auto-upload="false"
             :on-change="handleFileChange"
             :on-remove="handleFileRemove"
+            :on-exceed="handleFileExceed"
             :before-upload="beforeUpload"
             accept="image/*"
             :limit="1"
+            :show-file-list="true"
+            list-type="picture"
           >
             <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-            <div class="el-upload__text">
-              Text
+            <div class="el-upload__text" v-if="!selectedFile">
+              Drop image here or <em>click to upload</em>
+            </div>
+            <div class="el-upload__text" v-else style="color: #409eff;">
+              Drop new image to <em>replace current one</em>
             </div>
             <template #tip>
               <div class="el-upload__tip">
-                Text
+                JPG, PNG files up to 10MB<br/>
+                <small style="color: #909399;">New images will automatically replace the current one</small>
               </div>
             </template>
           </el-upload>
@@ -41,11 +48,61 @@
               size="large"
               :loading="loading"
               @click="analyzeImage"
-              style="width: 100%"
+              style="width: 100%; margin-bottom: 8px;"
+              :disabled="loading"
             >
               <el-icon><Search /></el-icon>
-              {{ loading ? "Text" : "Text" }}
+              {{ loading ? 'Analyzing Tool...' : 'Identify Tool' }}
             </el-button>
+            
+            <!-- Help text for slow analysis -->
+            <el-alert
+              v-if="!loading && !analysisResult"
+              title="AI Analysis Tips"
+              type="info"
+              :closable="false"
+              show-icon
+              style="margin-top: 8px;"
+            >
+              <template #default>
+                <div style="font-size: 13px;">
+                  <p>• Analysis may take 1-2 minutes for high accuracy</p>
+                  <p>• Clear, well-lit images work best</p>
+                  <p>• If timeout occurs, try a smaller image or retry</p>
+                </div>
+              </template>
+            </el-alert>
+            
+            <!-- Fancy Progress Bar -->
+            <div v-if="loading" class="fancy-progress-container" style="margin-top: 16px;">
+              <div class="progress-header">
+                <div class="progress-icon">
+                  <el-icon class="spinning-icon"><Loading /></el-icon>
+                </div>
+                <div class="progress-text">
+                  <div class="progress-title">AI Tool Identification</div>
+                  <div class="progress-status">{{ analysisStatus }}</div>
+                </div>
+              </div>
+              
+              <div class="custom-progress-bar">
+                <div class="progress-track">
+                  <div 
+                    class="progress-fill" 
+                    :style="{ width: Math.round(analysisProgress) + '%' }"
+                  ></div>
+                  <div class="progress-glow"></div>
+                </div>
+                <div class="progress-dots">
+                  <div 
+                    v-for="n in 5" 
+                    :key="n" 
+                    class="progress-dot"
+                    :class="{ active: Math.round(analysisProgress) >= n * 20 }"
+                  ></div>
+                </div>
+              </div>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -54,7 +111,12 @@
       <el-col :xs="24" :lg="12" v-if="selectedFile">
         <el-card class="preview-card">
           <template #header>
-            <h3>Image Preview</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h3>Image Preview</h3>
+              <el-tooltip content="Drag and drop or click upload area to replace image">
+                <el-tag size="small" type="info">Auto-replace enabled</el-tag>
+              </el-tooltip>
+            </div>
           </template>
           
           <div class="image-preview">
@@ -71,14 +133,14 @@
 
     <!-- Results Section -->
     <div v-if="analysisResult" class="results-section">
-      <h2 class="section-title">Text</h2>
+      <h2 class="section-title">Analysis Results</h2>
       
       <el-row :gutter="20">
         <!-- Tool Information -->
         <el-col :xs="24" :lg="12">
           <el-card class="result-card">
             <template #header>
-              <h3>Text</h3>
+              <h3>Tool Information</h3>
             </template>
             
             <el-descriptions :column="1" border>
@@ -94,7 +156,7 @@
               <el-descriptions-item label="Category">
                 <el-tag>{{ analysisResult.tool_info.category }}</el-tag>
               </el-descriptions-item>
-              <el-descriptions-item :label=""Text"">
+              <el-descriptions-item label="Confidence">
                 <el-progress 
                   :percentage="Math.round(analysisResult.tool_info.confidence * 100)"
                   :color="getConfidenceColor(analysisResult.tool_info.confidence)"
@@ -104,7 +166,7 @@
             
             <!-- Specifications -->
             <div v-if="Object.keys(analysisResult.tool_info.specifications).length > 0" class="specifications">
-              <h4>Text</h4>
+              <h4>Specifications</h4>
               <el-tag 
                 v-for="(value, key) in analysisResult.tool_info.specifications" 
                 :key="key"
@@ -120,7 +182,7 @@
         <el-col :xs="24" :lg="12">
           <el-card class="result-card">
             <template #header>
-              <h3>Text</h3>
+              <h3>Where to Buy</h3>
             </template>
             
             <div class="shopping-links">
@@ -133,7 +195,7 @@
                   <div class="shopping-header">
                     <span class="retailer">{{ link.retailer }}</span>
                     <el-tag v-if="link.is_exact_match" type="success" size="small">
-                      Text
+                      Exact Match
                     </el-tag>
                   </div>
                   <div class="product-title">{{ link.title }}</div>
@@ -144,7 +206,7 @@
                       type="success" 
                       size="small"
                     >
-                      Text
+                      In Stock
                     </el-tag>
                   </div>
                 </div>
@@ -165,7 +227,7 @@
       <div v-if="analysisResult.alternatives && analysisResult.alternatives.length > 0" class="alternatives-section">
         <el-card class="result-card">
           <template #header>
-            <h3>Text</h3>
+            <h3>Alternative Tools</h3>
           </template>
           
           <el-row :gutter="16">
@@ -191,7 +253,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessage, type UploadProps, type UploadUserFile } from 'element-plus'
-import { UploadFilled, Search } from '@element-plus/icons-vue'
+import { UploadFilled, Search, Loading } from '@element-plus/icons-vue'
 import api, { AGENT_ENDPOINTS } from '@/utils/api'
 
 interface AnalysisResult {
@@ -225,9 +287,13 @@ const selectedFile = ref<File | null>(null)
 const imagePreview = ref<string>('')
 const loading = ref(false)
 const analysisResult = ref<AnalysisResult | null>(null)
+const analysisProgress = ref(0)
+const analysisStatus = ref('')
 
 const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadUserFile) => {
   if (uploadFile.raw) {
+    // Clear previous results when new file is selected
+    analysisResult.value = null
     selectedFile.value = uploadFile.raw
     
     // Create preview URL
@@ -236,6 +302,8 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadUserFile) =
       imagePreview.value = e.target?.result as string
     }
     reader.readAsDataURL(uploadFile.raw)
+    
+    ElMessage.success('Image uploaded successfully! Click "Identify Tool" to analyze.')
   }
 }
 
@@ -243,6 +311,31 @@ const handleFileRemove = () => {
   selectedFile.value = null
   imagePreview.value = ''
   analysisResult.value = null
+}
+
+const handleFileExceed: UploadProps['onExceed'] = (files) => {
+  // When user tries to upload a new file while one exists, replace the old one
+  uploadRef.value?.clearFiles()
+  const newFile = files[0]
+  
+  // Validate the new file first
+  if (beforeUpload(newFile)) {
+    // Clear previous results
+    analysisResult.value = null
+    selectedFile.value = newFile
+    
+    // Create preview URL
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(newFile)
+    
+    // Add the new file to the upload component
+    uploadRef.value?.handleStart(newFile)
+    
+    ElMessage.success('Image replaced successfully! Click "Identify Tool" to analyze.')
+  }
 }
 
 const beforeUpload = (file: File) => {
@@ -266,29 +359,129 @@ const analyzeImage = async () => {
     return
   }
 
+  // Reset progress
   loading.value = true
+  analysisProgress.value = 0
+  analysisStatus.value = 'Preparing image for analysis...'
+  
   try {
+    // Progress: 10% - Preparing data
+    analysisProgress.value = 10
+    analysisStatus.value = 'Processing image...'
+    
     const formData = new FormData()
     formData.append('image', selectedFile.value)
     formData.append('include_alternatives', 'true')
 
+    // Progress: 25% - Image processed
+    analysisProgress.value = 25
+    analysisStatus.value = 'Uploading to AI identification service...'
+    
+    // Progress: 40% - Starting API call
+    analysisProgress.value = 40
+    analysisStatus.value = 'AI is identifying your tool...'
+
+    // Create a progress simulation for tool identification
+    const progressInterval = setInterval(() => {
+      if (analysisProgress.value < 85) {
+        analysisProgress.value = Math.min(85, analysisProgress.value + Math.floor(Math.random() * 8) + 2)
+        const messages = [
+          'Analyzing tool shape and features...',
+          'Comparing with tool database...',
+          'Identifying brand and model...',
+          'Finding shopping options...',
+          'Generating recommendations...'
+        ]
+        analysisStatus.value = messages[Math.floor(Math.random() * messages.length)]
+      }
+    }, 1500)
+
     const response = await api.post(AGENT_ENDPOINTS.TOOL_IDENTIFICATION, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
+      },
+      timeout: 120000, // 2 minutes timeout for AI analysis
+      onUploadProgress: (progressEvent) => {
+        // Update progress for file upload (first 40% of progress)
+        if (progressEvent.total) {
+          const uploadProgress = Math.round((progressEvent.loaded * 40) / progressEvent.total)
+          if (uploadProgress > analysisProgress.value) {
+            analysisProgress.value = Math.min(40, uploadProgress)
+            analysisStatus.value = 'Uploading image...'
+          }
+        }
       }
     })
 
+    // Clear progress interval
+    clearInterval(progressInterval)
+    
+    // Progress: 95% - Processing response
+    analysisProgress.value = 95
+    analysisStatus.value = 'Finalizing results...'
+
     if (response.data.success) {
-      analysisResult.value = response.data.data
-      ElMessage.success('Analysis completed successfully!')
+      // Progress: 100% - Complete
+      analysisProgress.value = 100
+      analysisStatus.value = 'Identification complete!'
+      
+      setTimeout(() => {
+        analysisResult.value = response.data.data
+        ElMessage.success('Tool identification completed successfully!')
+      }, 500)
     } else {
+      clearInterval(progressInterval)
       ElMessage.error('Analysis failed')
     }
   } catch (error: any) {
+    // Clear progress interval on error
+    if (typeof progressInterval !== 'undefined') {
+      clearInterval(progressInterval)
+    }
+    
     console.error('Analysis error:', error)
-    ElMessage.error(error.response?.data?.detail || 'Analysis failed')
+    
+    analysisProgress.value = 0
+    analysisStatus.value = ''
+    
+    // Better error handling based on error type
+    if (error.code === 'ECONNABORTED' || error.response?.status === 408) {
+      ElMessage.error({
+        message: 'AI analysis timed out. The service may be experiencing high load. Please try again with a smaller image.',
+        duration: 10000,
+        showClose: true
+      })
+    } else if (error.response?.status === 413) {
+      ElMessage.error({
+        message: 'Image file is too large. Please compress your image to under 10MB and try again.',
+        duration: 6000,
+        showClose: true
+      })
+    } else if (error.response?.status === 429) {
+      ElMessage.error({
+        message: 'AI service rate limit exceeded. Please wait a few minutes and try again.',
+        duration: 8000,
+        showClose: true
+      })
+    } else if (error.response?.status >= 500) {
+      ElMessage.error({
+        message: 'AI service temporarily unavailable. Please try again in a few minutes.',
+        duration: 6000,
+        showClose: true
+      })
+    } else {
+      ElMessage.error({
+        message: error.response?.data?.detail || error.message || 'Analysis failed. Please check your image and try again.',
+        duration: 5000,
+        showClose: true
+      })
+    }
   } finally {
-    loading.value = false
+    setTimeout(() => {
+      loading.value = false
+      analysisProgress.value = 0
+      analysisStatus.value = ''
+    }, 1000) // Keep progress visible briefly after completion
   }
 }
 
@@ -456,6 +649,154 @@ const openShoppingLink = (url: string) => {
 .alternative-item .reason {
   font-style: italic;
   color: #909399;
+}
+
+/* Fancy Progress Bar Styles */
+.fancy-progress-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.fancy-progress-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.progress-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.spinning-icon {
+  font-size: 20px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.progress-text {
+  flex: 1;
+}
+
+.progress-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.progress-status {
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.custom-progress-bar {
+  position: relative;
+}
+
+.progress-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f5ff, #00d4ff, #0099ff);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 149, 255, 0.5);
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
+  animation: progress-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes progress-glow {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.progress-dot.active {
+  background: #00f5ff;
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.7);
+  transform: scale(1.2);
+}
+
+.progress-dot.active::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 245, 255, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(0.8); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
 }
 
 /* Responsive Design */

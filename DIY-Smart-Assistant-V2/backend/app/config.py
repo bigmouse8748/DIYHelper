@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "DIY Smart Assistant"
     app_version: str = "2.0.0"
-    debug: bool = False
+    debug: bool = True
     secret_key: str = secrets.token_urlsafe(32)
     
     # Database

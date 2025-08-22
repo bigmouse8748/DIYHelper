@@ -5,7 +5,7 @@ import { ElMessage } from 'element-plus'
 // Create axios instance
 const api = axios.create({
   baseURL: 'http://localhost:8000',
-  timeout: 30000,
+  timeout: 120000, // Increase timeout to 2 minutes for AI analysis
   headers: {
     'Content-Type': 'application/json'
   }

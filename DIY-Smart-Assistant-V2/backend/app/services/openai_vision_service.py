@@ -22,7 +22,10 @@ class OpenAIVisionService:
             self.client = None
         else:
             try:
-                self.client = OpenAI(api_key=api_key)
+                self.client = OpenAI(
+                    api_key=api_key,
+                    timeout=90.0  # 90 second timeout for OpenAI API calls
+                )
                 logger.info("OpenAI Vision service initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAI client: {e}")

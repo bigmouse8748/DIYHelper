@@ -15,7 +15,12 @@ const app = createApp(App)
 
 // Register Element Plus icons
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
+  // Skip any key that starts with a number or contains invalid characters
+  if (/^[a-zA-Z][\w-]*$/.test(key)) {
+    app.component(key, component)
+  } else {
+    console.warn(`Skipping invalid component name: ${key}`)
+  }
 }
 
 const pinia = createPinia()

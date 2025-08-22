@@ -135,15 +135,11 @@ class ProductInfoAgent(BaseAgent):
             ]
             variants.extend([url for url in base_patterns if url != base_image_url])
         
-        # Generate standard Amazon image URLs using ASIN
+        # Generate Amazon placeholder image (will be validated and replaced if needed)
         if asin:
-            standard_formats = [
-                f"https://m.media-amazon.com/images/I/{asin}._AC_SL1500_.jpg",
-                f"https://images-na.ssl-images-amazon.com/images/I/{asin}._AC_SL1500_.jpg",
-                f"https://m.media-amazon.com/images/I/{asin}._AC_SL1000_.jpg",
-                f"https://images-amazon.com/images/I/{asin}._AC_SL1500_.jpg"
-            ]
-            variants.extend(standard_formats)
+            # Use a placeholder that can be easily replaced in post-processing
+            placeholder_url = f"https://placeholder-amazon-image.com/{asin}"
+            variants.append(placeholder_url)
         
         return list(set(variants))  # Remove duplicates
     

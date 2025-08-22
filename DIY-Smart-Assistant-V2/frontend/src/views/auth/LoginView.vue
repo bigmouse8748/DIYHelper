@@ -1,6 +1,6 @@
 <template>
   <div class="login-view">
-    <h2 class="login-title">Text</h2>
+    <h2 class="login-title">Sign In</h2>
     
     <el-form
       ref="formRef"
@@ -37,16 +37,16 @@
           :loading="authStore.loading"
           @click="handleLogin"
         >
-          Text
+          Sign In
         </el-button>
       </el-form-item>
     </el-form>
     
     <div class="login-footer">
       <p>
-        Text
+        Don't have an account?
         <router-link to="/auth/register" class="auth-link">
-          Text
+          Sign Up
         </router-link>
       </p>
     </div>
@@ -71,11 +71,11 @@ const loginForm = reactive({
 
 const rules: FormRules = {
   email: [
-    { required: true, message: t('auth.emailRequired'), trigger: 'blur' },
+    { required: true, message: 'Email is required', trigger: 'blur' },
     { type: 'email', message: 'Please enter a valid email', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: t('auth.passwordRequired'), trigger: 'blur' },
+    { required: true, message: 'Password is required', trigger: 'blur' },
     { min: 6, message: 'Password must be at least 6 characters', trigger: 'blur' }
   ]
 }
@@ -91,7 +91,7 @@ const handleLogin = async () => {
       password: loginForm.password
     })
     
-    ElMessage.success(t('auth.loginSuccess'))
+    ElMessage.success('Login successful!')
     router.push({ name: 'dashboard' })
   } catch (error: any) {
     if (error.message) {

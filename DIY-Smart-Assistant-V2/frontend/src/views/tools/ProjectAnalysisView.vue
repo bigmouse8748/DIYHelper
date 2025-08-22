@@ -82,10 +82,42 @@
               :loading="loading"
               @click="analyzeProject"
               style="width: 100%"
+              :disabled="loading"
             >
               <el-icon><DataAnalysis /></el-icon>
               {{ loading ? 'Analyzing Project...' : 'Analyze Project' }}
             </el-button>
+            
+            <!-- Fancy Progress Bar -->
+            <div v-if="loading" class="fancy-progress-container" style="margin-top: 16px;">
+              <div class="progress-header">
+                <div class="progress-icon">
+                  <el-icon class="spinning-icon"><Loading /></el-icon>
+                </div>
+                <div class="progress-text">
+                  <div class="progress-title">AI Analysis in Progress</div>
+                  <div class="progress-status">{{ analysisStatus }}</div>
+                </div>
+              </div>
+              
+              <div class="custom-progress-bar">
+                <div class="progress-track">
+                  <div 
+                    class="progress-fill" 
+                    :style="{ width: Math.round(analysisProgress) + '%' }"
+                  ></div>
+                  <div class="progress-glow"></div>
+                </div>
+                <div class="progress-dots">
+                  <div 
+                    v-for="(n, index) in [1, 2, 3, 4, 5]" 
+                    :key="`dot-${index}`" 
+                    class="progress-dot"
+                    :class="{ active: Math.round(analysisProgress) >= n * 20 }"
+                  ></div>
+                </div>
+              </div>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -99,16 +131,18 @@
           
           <div class="image-gallery">
             <div 
-              v-for="file in fileList" 
-              :key="file.uid"
+              v-for="(file, index) in fileList" 
+              :key="`file-${index}`"
               class="preview-item"
             >
               <el-image 
-                :src="file.url" 
-                fit="cover" 
+                :src="getPreviewUrl(file)" 
+                fit="contain" 
                 class="preview-image"
                 :preview-src-list="previewList"
+                :lazy="true"
               />
+              <div class="image-name">{{ file.name }}</div>
             </div>
           </div>
         </el-card>
@@ -127,21 +161,21 @@
         
         <el-descriptions :column="2" border>
           <el-descriptions-item label="Project Name">
-            {{ analysisResult.project_name }}
+            {{ analysisResult.comprehensive_analysis.project_name }}
           </el-descriptions-item>
-          <el-descriptions-item label="Images Analyzed">
-            {{ analysisResult.images_analyzed }}
+          <el-descriptions-item label="Project Type">
+            {{ analysisResult.comprehensive_analysis.project_type }}
           </el-descriptions-item>
           <el-descriptions-item label="Difficulty Level">
-            <el-tag :type="getDifficultyColor(analysisResult.estimated_difficulty)">
-              {{ analysisResult.estimated_difficulty?.toUpperCase() }}
+            <el-tag :type="getDifficultyColor(analysisResult.comprehensive_analysis.difficulty_level)">
+              {{ analysisResult.comprehensive_analysis.difficulty_level?.toUpperCase() }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="Estimated Time">
-            {{ analysisResult.estimated_time }}
+            {{ analysisResult.comprehensive_analysis.estimated_time }}
           </el-descriptions-item>
           <el-descriptions-item label="Description" :span="2">
-            {{ analysisResult.description }}
+            {{ analysisResult.comprehensive_analysis.description }}
           </el-descriptions-item>
         </el-descriptions>
       </el-card>
@@ -172,8 +206,8 @@
                 <h5>Shopping Options:</h5>
                 <div class="link-list">
                   <div 
-                    v-for="link in analysisResult.tool_identification.shopping_links.slice(0, 3)" 
-                    :key="link.url"
+                    v-for="(link, index) in analysisResult.tool_identification.shopping_links.slice(0, 3)" 
+                    :key="`link-${index}`"
                     class="shopping-link"
                   >
                     <span class="retailer">{{ link.retailer }}</span>
@@ -188,44 +222,43 @@
           </el-card>
         </el-col>
         
-        <!-- Product Recommendations -->
-        <el-col :xs="24" :lg="12" v-if="analysisResult.product_recommendations">
+        <!-- Materials & Tools Summary -->
+        <el-col :xs="24" :lg="12" v-if="analysisResult.comprehensive_analysis">
           <el-card class="result-card">
             <template #header>
-              <h3>Product Recommendations</h3>
+              <h3>Materials & Tools</h3>
             </template>
             
-            <div class="recommendations-summary">
-              <p><strong>Total Products:</strong> {{ analysisResult.product_recommendations.recommendations?.length || 0 }}</p>
-              <p v-if="analysisResult.product_recommendations.total_estimated_cost">
-                <strong>Estimated Cost:</strong> 
-                ${{ analysisResult.product_recommendations.total_estimated_cost.total }}
-              </p>
-            </div>
-            
-            <div v-if="analysisResult.product_recommendations.recommendations" class="recommendations-list">
-              <div 
-                v-for="(rec, index) in analysisResult.product_recommendations.recommendations.slice(0, 3)" 
-                :key="index"
-                class="recommendation-item"
-              >
-                <div class="rec-header">
-                  <span class="rec-name">{{ rec.name }}</span>
-                  <el-tag :type="getPriorityColor(rec.priority)" size="small">
-                    {{ rec.priority }}
-                  </el-tag>
+            <div class="materials-section">
+              <h5>Materials Needed:</h5>
+              <div v-for="(material, index) in analysisResult.comprehensive_analysis.materials.slice(0, 3)" 
+                   :key="`material-${index}`" class="material-item">
+                <div class="material-header">
+                  <span class="material-name">{{ material.name }}</span>
+                  <span class="material-price">{{ material.estimated_price_range }}</span>
                 </div>
-                <div class="rec-details">
-                  <span class="rec-price">${{ rec.estimated_price }}</span>
-                  <span class="rec-category">{{ rec.category }}</span>
+                <div class="material-details">
+                  <span class="material-spec">{{ material.specification }}</span>
+                  <span class="material-qty">Qty: {{ material.quantity }}</span>
                 </div>
               </div>
             </div>
             
-            <div v-if="analysisResult.product_recommendations.shopping_tips" class="shopping-tips">
+            <div class="tools-section" style="margin-top: 20px;">
+              <h5>Tools Required:</h5>
+              <div v-for="(tool, index) in analysisResult.comprehensive_analysis.tools.slice(0, 4)" 
+                   :key="`tool-${index}`" class="tool-item">
+                <span class="tool-name">{{ tool.name }}</span>
+                <el-tag :type="tool.necessity === 'Essential' ? 'danger' : 'warning'" size="small">
+                  {{ tool.necessity }}
+                </el-tag>
+              </div>
+            </div>
+            
+            <div v-if="analysisResult.product_recommendations?.overall_recommendations?.shopping_tips" class="shopping-tips">
               <h5>Shopping Tips:</h5>
               <ul>
-                <li v-for="tip in analysisResult.product_recommendations.shopping_tips.slice(0, 3)" :key="tip">
+                <li v-for="(tip, index) in analysisResult.product_recommendations.overall_recommendations.shopping_tips.slice(0, 3)" :key="`tip-${index}`">
                   {{ tip }}
                 </li>
               </ul>
@@ -235,7 +268,7 @@
       </el-row>
       
       <!-- Safety Notes -->
-      <el-card v-if="analysisResult.safety_notes" class="safety-card">
+      <el-card v-if="analysisResult.comprehensive_analysis?.safety_notes" class="safety-card">
         <template #header>
           <h3>
             <el-icon style="color: #f56c6c;"><WarningFilled /></el-icon>
@@ -244,13 +277,32 @@
         </template>
         
         <el-alert
-          v-for="note in analysisResult.safety_notes"
-          :key="note"
+          v-for="(note, index) in analysisResult.comprehensive_analysis.safety_notes"
+          :key="`note-${index}`"
           :title="note"
           type="warning"
           :closable="false"
           style="margin-bottom: 12px;"
         />
+      </el-card>
+      
+      <!-- Build Steps -->
+      <el-card v-if="analysisResult.comprehensive_analysis?.steps" class="steps-card">
+        <template #header>
+          <h3>Build Steps</h3>
+        </template>
+        
+        <el-steps 
+          :active="analysisResult.comprehensive_analysis.steps.length" 
+          direction="vertical"
+        >
+          <el-step 
+            v-for="(step, index) in analysisResult.comprehensive_analysis.steps"
+            :key="`step-${index}`"
+            :title="`Step ${index + 1}`"
+            :description="step"
+          />
+        </el-steps>
       </el-card>
     </div>
   </div>
@@ -259,15 +311,29 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessage, type UploadProps, type UploadUserFile } from 'element-plus'
-import { UploadFilled, DataAnalysis, WarningFilled } from '@element-plus/icons-vue'
+import { UploadFilled, DataAnalysis, WarningFilled, Loading } from '@element-plus/icons-vue'
 import api, { AGENT_ENDPOINTS } from '@/utils/api'
 
 interface ProjectAnalysisResult {
-  project_name: string
-  description: string
-  images_analyzed: number
-  estimated_difficulty: string
-  estimated_time: string
+  comprehensive_analysis: {
+    project_name: string
+    project_type: string
+    description: string
+    materials: Array<{
+      name: string
+      specification: string
+      quantity: string
+      estimated_price_range: string
+    }>
+    tools: Array<{
+      name: string
+      necessity: string
+    }>
+    difficulty_level: string
+    estimated_time: string
+    safety_notes: string[]
+    steps: string[]
+  }
   tool_identification?: {
     tool_info: {
       name: string
@@ -283,18 +349,27 @@ interface ProjectAnalysisResult {
     }>
   }
   product_recommendations?: {
-    recommendations?: Array<{
-      name: string
+    assessed_results: Array<{
+      material: string
       category: string
-      estimated_price: number
-      priority: string
+      products: Array<{
+        title: string
+        price: string
+        platform: string
+        rating: number
+        quality_score: number
+        product_url: string
+      }>
     }>
-    total_estimated_cost?: {
-      total: number
+    overall_recommendations: {
+      total_products_assessed: number
+      average_quality_score: number
+      shopping_tips: string[]
+      budget_breakdown: {
+        estimated_total: string
+      }
     }
-    shopping_tips?: string[]
   }
-  safety_notes?: string[]
 }
 
 const uploadRef = ref()
@@ -302,6 +377,8 @@ const formRef = ref()
 const fileList = ref<UploadUserFile[]>([])
 const loading = ref(false)
 const analysisResult = ref<ProjectAnalysisResult | null>(null)
+const analysisProgress = ref(0)
+const analysisStatus = ref('')
 
 const projectForm = ref({
   description: '',
@@ -310,11 +387,22 @@ const projectForm = ref({
 })
 
 const previewList = computed(() => 
-  fileList.value.map(file => file.url).filter(Boolean) as string[]
+  fileList.value.map(file => getPreviewUrl(file)).filter(Boolean) as string[]
 )
 
 const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadUserFile, uploadFiles: UploadUserFile[]) => {
   fileList.value = uploadFiles.filter(file => file.status !== 'fail')
+  
+  // Generate preview URL for the uploaded file if it doesn't have one
+  fileList.value.forEach(file => {
+    if (file.raw && !file.url) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        file.url = e.target?.result as string
+      }
+      reader.readAsDataURL(file.raw)
+    }
+  })
 }
 
 const handleFileRemove: UploadProps['onRemove'] = (file: UploadUserFile) => {
@@ -345,39 +433,149 @@ const analyzeProject = async () => {
     return
   }
 
+  // Reset progress
   loading.value = true
+  analysisProgress.value = 0
+  analysisStatus.value = 'Preparing images for analysis...'
+  
+  console.log('Starting project analysis...')
+  console.log('Files to upload:', fileList.value.length)
+  console.log('Project form:', projectForm.value)
+  
   try {
+    // Progress: 10% - Preparing data
+    analysisProgress.value = 10
+    analysisStatus.value = 'Processing images...'
+    
     const formData = new FormData()
     
     // Add images
-    fileList.value.forEach(file => {
+    let imageCount = 0
+    fileList.value.forEach((file, index) => {
+      console.log(`Processing file ${index + 1}:`, file)
       if (file.raw) {
         formData.append('images', file.raw)
+        imageCount++
+        console.log(`Added image ${index + 1}: ${file.name}, size: ${file.raw.size} bytes`)
+      } else {
+        console.log(`Skipping file ${index + 1}: no raw file data`)
       }
     })
     
+    console.log(`Total images added to FormData: ${imageCount}`)
+    
+    // Progress: 25% - Images processed
+    analysisProgress.value = 25
+    analysisStatus.value = 'Uploading to AI analysis service...'
+    
     // Add project details
-    formData.append('description', projectForm.value.description)
+    formData.append('description', projectForm.value.description || '')
     formData.append('project_type', projectForm.value.projectType)
     formData.append('budget_range', projectForm.value.budgetRange)
+    
+    console.log('Making API call to:', AGENT_ENDPOINTS.PROJECT_ANALYSIS)
+    console.log('FormData contents:')
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: File - ${value.name}, size: ${value.size}, type: ${value.type}`)
+      } else {
+        console.log(`${key}: ${value}`)
+      }
+    }
+    
+    console.log('About to make axios POST request...')
+    console.log('Total image files to send:', imageCount)
+    
+    // Progress: 40% - Starting API call
+    analysisProgress.value = 40
+    analysisStatus.value = 'AI is analyzing your project...'
+
+    // Create a progress simulation for long-running analysis
+    const progressInterval = setInterval(() => {
+      if (analysisProgress.value < 85) {
+        analysisProgress.value = Math.min(85, analysisProgress.value + Math.floor(Math.random() * 8) + 2)
+        const messages = [
+          'Identifying materials and tools...',
+          'Calculating project difficulty...',
+          'Finding product recommendations...',
+          'Generating safety guidelines...',
+          'Creating step-by-step instructions...'
+        ]
+        analysisStatus.value = messages[Math.floor(Math.random() * messages.length)]
+      }
+    }, 2000)
 
     const response = await api.post(AGENT_ENDPOINTS.PROJECT_ANALYSIS, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      // Let browser set Content-Type with boundary for multipart/form-data
+      // Use global timeout of 120 seconds from api.ts for AI analysis
     })
 
+    // Clear progress interval
+    clearInterval(progressInterval)
+    
+    // Progress: 95% - Processing response
+    analysisProgress.value = 95
+    analysisStatus.value = 'Finalizing results...'
+
+    console.log('API Response:', response)
+
     if (response.data.success) {
-      analysisResult.value = response.data.data
-      ElMessage.success('Project analysis completed successfully!')
+      // Progress: 100% - Complete
+      analysisProgress.value = 100
+      analysisStatus.value = 'Analysis complete!'
+      
+      setTimeout(() => {
+        // Deep clone to avoid any reactive issues with complex nested data
+        analysisResult.value = JSON.parse(JSON.stringify(response.data.data))
+        console.log('Analysis result:', response.data.data)
+        // ElMessage.success('Project analysis completed successfully!')
+        console.log('Project analysis completed successfully!')
+      }, 500)
     } else {
-      ElMessage.error('Analysis failed')
+      clearInterval(progressInterval)
+      console.error('Analysis failed:', response.data)
+      // ElMessage.error('Analysis failed')
+      alert('Analysis failed')
     }
   } catch (error: any) {
+    // Clear progress interval on error
+    if (typeof progressInterval !== 'undefined') {
+      clearInterval(progressInterval)
+    }
+    
     console.error('Analysis error:', error)
-    ElMessage.error(error.response?.data?.detail || 'Analysis failed')
+    console.error('Error response:', error.response)
+    console.error('Error status:', error.response?.status)
+    console.error('Error data:', error.response?.data)
+    console.error('Error code:', error.code)
+    console.error('Error config:', error.config)
+    
+    analysisProgress.value = 0
+    analysisStatus.value = ''
+    
+    // Provide specific error messages based on error type
+    let errorMessage = 'Analysis failed'
+    if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Analysis timed out. Please try with smaller images or try again later.'
+    } else if (error.response?.status === 422) {
+      errorMessage = 'Invalid request format. Please check your images and try again.'
+    } else if (error.response?.status === 500) {
+      errorMessage = 'Server error. Please try again later.'
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    // Temporarily use alert instead of ElMessage to avoid setAttribute error
+    alert(errorMessage)
+    console.error('Error message:', errorMessage)
   } finally {
-    loading.value = false
+    setTimeout(() => {
+      loading.value = false
+      analysisProgress.value = 0
+      analysisStatus.value = ''
+    }, 1000) // Keep progress visible briefly after completion
   }
 }
 
@@ -403,6 +601,44 @@ const getPriorityColor = (priority: string) => {
     case 'optional': return 'info'
     default: return 'primary'
   }
+}
+
+const getPreviewUrl = (file: UploadUserFile): string => {
+  if (file.url) {
+    return file.url
+  }
+  
+  if (file.raw) {
+    try {
+      // Check if URL.createObjectURL is available (most modern browsers)
+      if (typeof window !== 'undefined' && window.URL && window.URL.createObjectURL) {
+        return window.URL.createObjectURL(file.raw)
+      } else if (typeof URL !== 'undefined' && URL.createObjectURL) {
+        return URL.createObjectURL(file.raw)
+      } else {
+        console.warn('URL.createObjectURL not available, using FileReader fallback')
+        // This won't work for immediate display, but will set the URL asynchronously
+        if (!file._readerInProgress) {
+          file._readerInProgress = true
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            file.url = e.target?.result as string
+            file._readerInProgress = false
+          }
+          reader.onerror = () => {
+            file._readerInProgress = false
+          }
+          reader.readAsDataURL(file.raw)
+        }
+        return '' // Return empty string while loading
+      }
+    } catch (error) {
+      console.warn('Failed to create preview URL:', error)
+      return ''
+    }
+  }
+  
+  return ''
 }
 
 const openLink = (url: string) => {
@@ -454,14 +690,28 @@ const openLink = (url: string) => {
 }
 
 .preview-item {
-  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
   border-radius: 8px;
-  overflow: hidden;
+  background: #fafbfc;
 }
 
 .preview-image {
   width: 100%;
-  height: 100%;
+  height: 150px;
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+}
+
+.image-name {
+  font-size: 12px;
+  color: #909399;
+  text-align: center;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .results-section {
@@ -587,9 +837,204 @@ const openLink = (url: string) => {
   font-size: 14px;
 }
 
+.materials-section h5, .tools-section h5 {
+  margin: 16px 0 8px 0;
+  color: #303133;
+  font-weight: 600;
+}
+
+.material-item, .tool-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.material-header, .material-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.material-name, .tool-name {
+  font-weight: 600;
+  color: #303133;
+}
+
+.material-price {
+  color: #67c23a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.material-spec, .material-qty {
+  color: #909399;
+  font-size: 12px;
+}
+
+.tool-item {
+  background: #f0f9ff;
+  border-left: 3px solid #409eff;
+}
+
 .safety-card :deep(.el-card__header) {
   background: #fef0f0;
   border-bottom: 1px solid #fbc4c4;
+}
+
+.steps-card {
+  margin-top: 20px;
+}
+
+/* Fancy Progress Bar Styles */
+.fancy-progress-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.fancy-progress-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.progress-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.spinning-icon {
+  font-size: 20px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.progress-text {
+  flex: 1;
+}
+
+.progress-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.progress-status {
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.custom-progress-bar {
+  position: relative;
+}
+
+.progress-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f5ff, #00d4ff, #0099ff);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 149, 255, 0.5);
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
+  animation: progress-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes progress-glow {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.progress-dot.active {
+  background: #00f5ff;
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.7);
+  transform: scale(1.2);
+}
+
+.progress-dot.active::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 245, 255, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(0.8); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
 }
 
 /* Responsive Design */

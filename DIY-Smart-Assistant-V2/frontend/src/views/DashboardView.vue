@@ -106,7 +106,7 @@
     <div class="actions-section">
       <h2 class="section-title">Quick Actions</h2>
       <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col :xs="24" :sm="12" :md="6">
           <el-card class="action-card" @click="navigateTo('tool-identification')">
             <div class="action-content">
               <el-icon class="action-icon"><Search /></el-icon>
@@ -116,22 +116,68 @@
           </el-card>
         </el-col>
         
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-card class="action-card" @click="navigateTo('product-recommendation')">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-card class="action-card" @click="navigateTo('project-analysis')">
             <div class="action-content">
-              <el-icon class="action-icon"><ShoppingBag /></el-icon>
-              <h3 class="action-title">Product Recommendation</h3>
-              <p class="action-description">Get smart product recommendations for your projects</p>
+              <el-icon class="action-icon"><DataAnalysis /></el-icon>
+              <h3 class="action-title">Project Analysis</h3>
+              <p class="action-description">Get complete analysis and recommendations for your DIY projects</p>
+            </div>
+          </el-card>
+        </el-col>
+        
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-card class="action-card" @click="navigateTo('smart-tool-finder')">
+            <div class="action-content">
+              <el-icon class="action-icon"><Tools /></el-icon>
+              <h3 class="action-title">Smart Tool Finder</h3>
+              <p class="action-description">Find the perfect tools for your specific needs</p>
+            </div>
+          </el-card>
+        </el-col>
+        
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-card class="action-card" @click="navigateTo('our-picks')">
+            <div class="action-content">
+              <el-icon class="action-icon"><Star /></el-icon>
+              <h3 class="action-title">Our Picks</h3>
+              <p class="action-description">Curated tool recommendations from experts</p>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+
+    <!-- Admin Panel - Only for Admins -->
+    <div v-if="authStore.isAdmin" class="admin-section">
+      <h2 class="section-title">Admin Panel</h2>
+      <el-row :gutter="20">
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-card class="action-card" @click="navigateToAdmin('dashboard')">
+            <div class="action-content">
+              <el-icon class="action-icon admin-icon"><DataAnalysis /></el-icon>
+              <h3 class="action-title">Admin Dashboard</h3>
+              <p class="action-description">View system analytics and overview</p>
             </div>
           </el-card>
         </el-col>
         
         <el-col :xs="24" :sm="12" :md="8">
-          <el-card class="action-card" @click="navigateTo('project-analysis')">
+          <el-card class="action-card" @click="navigateToAdmin('users')">
             <div class="action-content">
-              <el-icon class="action-icon"><DataAnalysis /></el-icon>
-              <h3 class="action-title">Project Analysis</h3>
-              <p class="action-description">Complete DIY project analysis</p>
+              <el-icon class="action-icon admin-icon"><User /></el-icon>
+              <h3 class="action-title">User Management</h3>
+              <p class="action-description">Manage users and permissions</p>
+            </div>
+          </el-card>
+        </el-col>
+        
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-card class="action-card" @click="navigateToAdmin('products')">
+            <div class="action-content">
+              <el-icon class="action-icon admin-icon"><ShoppingBag /></el-icon>
+              <h3 class="action-title">Product Management</h3>
+              <p class="action-description">Manage products and categories</p>
             </div>
           </el-card>
         </el-col>
@@ -167,7 +213,8 @@ import {
   Setting,
   ArrowDown,
   User,
-  SwitchButton
+  SwitchButton,
+  Star
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -194,6 +241,10 @@ const navigateTo = (routeName: string) => {
   router.push({ name: routeName })
 }
 
+const navigateToAdmin = (section: string) => {
+  router.push({ name: `admin-${section}` })
+}
+
 const handleUserCommand = async (command: string) => {
   switch (command) {
     case 'profile':
@@ -216,7 +267,7 @@ const handleUserCommand = async (command: string) => {
         
         await authStore.logout()
         ElMessage.success('Logged out successfully')
-        router.push({ name: 'home' })
+        router.push({ name: 'landing' })
       } catch (error) {
         // User cancelled
       }
@@ -401,6 +452,14 @@ const handleUserCommand = async (command: string) => {
   margin-bottom: 40px;
 }
 
+.admin-section {
+  margin-bottom: 40px;
+}
+
+.admin-icon {
+  color: #f56c6c !important;
+}
+
 .action-card {
   margin-bottom: 20px;
   cursor: pointer;
@@ -421,6 +480,11 @@ const handleUserCommand = async (command: string) => {
   font-size: 48px;
   color: #667eea;
   margin-bottom: 16px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-title {

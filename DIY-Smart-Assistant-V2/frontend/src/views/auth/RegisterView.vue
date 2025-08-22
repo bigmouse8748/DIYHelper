@@ -1,6 +1,6 @@
 <template>
   <div class="register-view">
-    <h2 class="register-title">Text</h2>
+    <h2 class="register-title">Create Account</h2>
     
     <el-form
       ref="formRef"
@@ -55,16 +55,16 @@
           :loading="authStore.loading"
           @click="handleRegister"
         >
-          Text
+          Sign Up
         </el-button>
       </el-form-item>
     </el-form>
     
     <div class="register-footer">
       <p>
-        Text
+        Already have an account?
         <router-link to="/auth/login" class="auth-link">
-          Text
+          Sign In
         </router-link>
       </p>
     </div>
@@ -99,15 +99,15 @@ const validateConfirmPassword = (rule: any, value: any, callback: any) => {
 
 const rules: FormRules = {
   username: [
-    { required: true, message: t('auth.usernameRequired'), trigger: 'blur' },
+    { required: true, message: 'Username is required', trigger: 'blur' },
     { min: 3, message: 'Username must be at least 3 characters', trigger: 'blur' }
   ],
   email: [
-    { required: true, message: t('auth.emailRequired'), trigger: 'blur' },
+    { required: true, message: 'Email is required', trigger: 'blur' },
     { type: 'email', message: 'Please enter a valid email', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: t('auth.passwordRequired'), trigger: 'blur' },
+    { required: true, message: 'Password is required', trigger: 'blur' },
     { min: 6, message: 'Password must be at least 6 characters', trigger: 'blur' }
   ],
   confirmPassword: [
@@ -128,7 +128,7 @@ const handleRegister = async () => {
       password: registerForm.password
     })
     
-    ElMessage.success(t('auth.registerSuccess'))
+    ElMessage.success('Registration successful!')
     router.push({ name: 'dashboard' })
   } catch (error: any) {
     if (error.message) {

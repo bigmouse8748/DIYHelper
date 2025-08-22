@@ -23,13 +23,17 @@
               <el-icon><Search /></el-icon>
               <span>Tool Identification</span>
             </el-menu-item>
-            <el-menu-item index="product-recommendation">
-              <el-icon><ShoppingBag /></el-icon>
-              <span>Product Recommendation</span>
+            <el-menu-item index="smart-tool-finder">
+              <el-icon><ChatLineRound /></el-icon>
+              <span>Smart Tool Finder</span>
             </el-menu-item>
             <el-menu-item index="project-analysis">
               <el-icon><DataAnalysis /></el-icon>
               <span>Project Analysis</span>
+            </el-menu-item>
+            <el-menu-item index="our-picks">
+              <el-icon><Star /></el-icon>
+              <span>Our Picks</span>
             </el-menu-item>
           </el-menu>
         </div>
@@ -79,8 +83,9 @@ import {
   Tools,
   HomeFilled,
   Search,
-  ShoppingBag,
+  ChatLineRound,
   DataAnalysis,
+  Star,
   User,
   ArrowDown,
   Setting,
@@ -117,7 +122,7 @@ const handleUserCommand = async (command: string) => {
         
         await authStore.logout()
         ElMessage.success('Logged out successfully')
-        router.push({ name: 'home' })
+        router.push({ name: 'landing' })
       } catch (error) {
         // User cancelled
       }

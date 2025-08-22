@@ -31,33 +31,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
 )
 
-# Middleware setup
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080", 
-        "http://127.0.0.1:8080", 
-        "http://localhost:3000", 
-        "http://localhost:3001", 
-        "http://localhost:3002",
-        "http://localhost:8085",  # Add port 8085 for frontend
-        "http://127.0.0.1:8085",
-        "http://localhost:9000",  # Add port 9000 for user management
-        "http://127.0.0.1:9000"
-    ],
-    allow_credentials=True,  # Enable credentials for authentication
-    allow_methods=["*"],  # Allow all HTTP methods including OPTIONS
-    allow_headers=["*"],
-)
-
-# Trusted hosts (for production)
-if not settings.debug:
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.allowed_origins
-    )
-
-
+# Add logging middleware first (will execute last)
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log all incoming requests"""
@@ -72,6 +46,33 @@ async def log_requests(request: Request, call_next):
     )
     
     return response
+
+# Trusted hosts (for production)
+if not settings.debug:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.allowed_origins
+    )
+
+# CORS middleware - MUST be added last to execute first
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:8082",
+        "http://localhost:8083",
+        "http://localhost:8084",
+        "http://localhost:8085",
+        "http://localhost:8086",
+        "http://localhost:8087",
+        "http://localhost:8088",  # Current frontend port
+        "http://127.0.0.1:8088",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(Exception)
