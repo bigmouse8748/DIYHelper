@@ -1,0 +1,93 @@
+{
+    "family": "cheasydiy-production-backend",
+    "requiresCompatibilities": ["FARGATE"],
+    "networkMode": "awsvpc",
+    "cpu": "512",
+    "memory": "1024",
+    "executionRoleArn": "arn:aws:iam::571600828655:role/cheasydiy-production-ecs-task-execution-role",
+    "taskRoleArn": "arn:aws:iam::571600828655:role/cheasydiy-production-ecs-task-role",
+    "containerDefinitions": [
+        {
+            "name": "backend",
+            "image": "571600828655.dkr.ecr.us-east-1.amazonaws.com/cheasydiy/backend:6b191178efba007755eeb49e99d5bc32cd6f6adf",
+            "essential": true,
+            "portMappings": [
+                {
+                    "containerPort": 8001,
+                    "hostPort": 8001,
+                    "protocol": "tcp"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/cheasydiy-production",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "backend"
+                }
+            },
+            "environment": [
+                {
+                    "name": "S3_BUCKET",
+                    "value": "cheasydiy-production-uploads"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://dbadmin:ChEasyDiy2024!@cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com:5432/cheasydiy"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "5432"
+                },
+                {
+                    "name": "DB_USER",
+                    "value": "dbadmin"
+                },
+                {
+                    "name": "ENVIRONMENT",
+                    "value": "production"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "cheasydiy"
+                },
+                {
+                    "name": "CORS_ORIGINS",
+                    "value": "https://cheasydiy.com,https://www.cheasydiy.com,https://api.cheasydiy.com,http://localhost:3000,http://localhost:3001,http://localhost:3002"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "ChEasyDiy2024!"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "OPENAI_API_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets-wiSK81:OPENAI_API_KEY::"
+                },
+                {
+                    "name": "JWT_SECRET_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets-wiSK81:JWT_SECRET_KEY::"
+                }
+            ],
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "curl -f http://localhost:8001/api/v1/health/status || exit 1"
+                ],
+                "interval": 30,
+                "timeout": 10,
+                "retries": 3,
+                "startPeriod": 60
+            }
+        }
+    ]
+}
