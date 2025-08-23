@@ -142,6 +142,40 @@ async def startup():
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         # Continue startup anyway - tables might already exist
+    
+    # Add missing columns if tables exist but schema is outdated
+    if not settings.database_url.startswith("sqlite"):
+        try:
+            from sqlalchemy import text
+            from .database import engine
+            
+            async with engine.begin() as conn:
+                # Add missing columns (safe to run multiple times with IF NOT EXISTS)
+                migrations = [
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(255)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP"
+                ]
+                
+                for migration in migrations:
+                    try:
+                        await conn.execute(text(migration))
+                        logger.info(f"Migration executed: {migration.split('ADD COLUMN IF NOT EXISTS')[1].split()[0]}")
+                    except Exception as e:
+                        logger.warning(f"Migration skipped: {e}")
+                        
+            logger.info("Database schema updated successfully")
+        except Exception as e:
+            logger.error(f"Schema migration failed: {e}")
+            # Continue anyway - might not have permissions
+    
     logger.info("Application started successfully")
 
 # Include API router
