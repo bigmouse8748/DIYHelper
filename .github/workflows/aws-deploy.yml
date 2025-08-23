@@ -163,14 +163,6 @@ jobs:
       working-directory: ./DIY-Smart-Assistant-V2/frontend
       run: |
         aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
-        
-    - name: Set Cache Control Headers
-      run: |
-        # Set no-cache for HTML files
-        aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html --metadata-directive REPLACE --cache-control "no-cache, no-store, must-revalidate"
-        
-        # Set long-term cache for static assets
-        aws s3 sync s3://${{ secrets.S3_BUCKET_NAME }}/assets/ s3://${{ secrets.S3_BUCKET_NAME }}/assets/ --metadata-directive REPLACE --cache-control "public, max-age=31536000"
 
     - name: Invalidate CloudFront distribution
       run: |
