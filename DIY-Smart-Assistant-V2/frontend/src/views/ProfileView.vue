@@ -17,10 +17,10 @@
           
           <div class="profile-info">
             <el-descriptions :column="1" border>
-              <el-descriptions-item :label=""Username"">
+              <el-descriptions-item label="Username">
                 {{ authStore.user?.username }}
               </el-descriptions-item>
-              <el-descriptions-item :label=""Email"">
+              <el-descriptions-item label="Email">
                 {{ authStore.user?.email }}
               </el-descriptions-item>
               <el-descriptions-item label="Account Type">
