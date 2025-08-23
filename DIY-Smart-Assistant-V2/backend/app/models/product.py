@@ -211,7 +211,7 @@ class ProductAnalysis(Base):
     
     # Admin decisions
     approved = Column(Boolean, default=False)
-    approved_by = Column(String, ForeignKey('users.id'))
+    approved_by = Column(Integer, ForeignKey('users.id'))
     approval_date = Column(DateTime)
     rejection_reason = Column(Text)
     
@@ -238,7 +238,7 @@ class AffiliateClick(Base):
     
     # Link information
     product_id = Column(String, ForeignKey('products.id'), nullable=False)
-    user_id = Column(String, ForeignKey('users.id'))  # Optional if user is logged in
+    user_id = Column(Integer, ForeignKey('users.id'))  # Optional if user is logged in
     
     # Click details
     click_timestamp = Column(DateTime, server_default=func.now())
@@ -290,7 +290,7 @@ class ProductRecommendationRule(Base):
     is_active = Column(Boolean, default=True)
     
     # Metadata
-    created_by = Column(String, ForeignKey('users.id'))
+    created_by = Column(Integer, ForeignKey('users.id'))
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
