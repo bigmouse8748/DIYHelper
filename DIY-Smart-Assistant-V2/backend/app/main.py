@@ -174,9 +174,41 @@ async def health_check():
     }
 
 @app.get("/api/test")
-async def api_test():
+async def api_test(request: Request):
     """API test endpoint for ALB health checks"""
-    return {"status": "ok", "message": "API is working"}
+    try:
+        return {
+            "status": "ok", 
+            "message": "API is working",
+            "timestamp": time.time(),
+            "host": request.headers.get("host", "unknown"),
+            "user_agent": request.headers.get("user-agent", "unknown"),
+            "method": request.method,
+            "url": str(request.url)
+        }
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": time.time()
+        }
+
+# 添加更简单的健康检查端点作为备选
+@app.get("/health")
+async def health_simple():
+    """Simplified health check"""
+    return {"status": "ok"}
+
+@app.get("/api/v1/health/status") 
+async def health_detailed():
+    """Detailed health check endpoint"""
+    return {
+        "status": "healthy",
+        "app_name": settings.app_name,
+        "version": settings.app_version,
+        "timestamp": time.time()
+    }
 
 
 # Root endpoint
