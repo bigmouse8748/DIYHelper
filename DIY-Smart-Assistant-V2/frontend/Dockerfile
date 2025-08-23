@@ -1,7 +1,7 @@
 # DIY Smart Assistant V2 Frontend
 
 # Build stage
-FROM node:18-alpine as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
