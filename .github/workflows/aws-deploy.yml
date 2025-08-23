@@ -15,7 +15,7 @@ env:
   ECR_REPOSITORY_FRONTEND: cheasydiy/frontend
   ECS_CLUSTER: cheasydiy-production-cluster
   ECS_SERVICE_BACKEND: cheasydiy-production-backend
-  ECS_SERVICE_FRONTEND: cheasydiy-production-frontend
+  S3_BUCKET_FRONTEND: cheasydiy-production-frontend
 
 jobs:
   test:
@@ -109,79 +109,24 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest
 
-    - name: Check if ECS services exist
-      id: check-services
+    - name: Update ECS Backend Service
       run: |
-        # Check if backend service exists
-        if aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_BACKEND }} --query 'services[0].status' --output text 2>/dev/null | grep -q "ACTIVE"; then
-          echo "backend-exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "backend-exists=false" >> $GITHUB_OUTPUT
-        fi
-        
-        # Check if frontend service exists  
-        if aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_FRONTEND }} --query 'services[0].status' --output text 2>/dev/null | grep -q "ACTIVE"; then
-          echo "frontend-exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "frontend-exists=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Update ECS service with new image (Backend)
-      if: steps.check-services.outputs.backend-exists == 'true'
-      run: |
-        # Get current task definition
-        TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_BACKEND }} --query 'services[0].taskDefinition' --output text)
-        
-        # Update service to use new image (ECS will handle rolling deployment)
+        # Update backend service (based on Terraform configuration)
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE_BACKEND }} \
           --force-new-deployment \
           --deployment-configuration "maximumPercent=200,minimumHealthyPercent=50"
         
-        echo "🔄 Backend service updated with rolling deployment strategy"
+        echo "🔄 Backend service updated with rolling deployment"
 
-    - name: Update ECS service with new image (Frontend)
-      if: steps.check-services.outputs.frontend-exists == 'true'
+    - name: Wait for backend service to stabilize
       run: |
-        # Get current task definition
-        TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_FRONTEND }} --query 'services[0].taskDefinition' --output text)
-        
-        # Update service to use new image (ECS will handle rolling deployment)
-        aws ecs update-service \
+        aws ecs wait services-stable \
           --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE_FRONTEND }} \
-          --force-new-deployment \
-          --deployment-configuration "maximumPercent=200,minimumHealthyPercent=50"
+          --services ${{ env.ECS_SERVICE_BACKEND }}
         
-        echo "🔄 Frontend service updated with rolling deployment strategy"
-
-    - name: Wait for services to stabilize
-      if: steps.check-services.outputs.backend-exists == 'true' || steps.check-services.outputs.frontend-exists == 'true'
-      run: |
-        SERVICES=""
-        if [ "${{ steps.check-services.outputs.backend-exists }}" == "true" ]; then
-          SERVICES="$SERVICES ${{ env.ECS_SERVICE_BACKEND }}"
-        fi
-        if [ "${{ steps.check-services.outputs.frontend-exists }}" == "true" ]; then
-          SERVICES="$SERVICES ${{ env.ECS_SERVICE_FRONTEND }}"
-        fi
-        if [ -n "$SERVICES" ]; then
-          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services $SERVICES
-        fi
-
-    - name: Create ECS services if they don't exist
-      if: steps.check-services.outputs.backend-exists == 'false' || steps.check-services.outputs.frontend-exists == 'false'
-      run: |
-        echo "⚠️ ECS services don't exist. Please create them manually:"
-        echo "Backend service: ${{ env.ECS_SERVICE_BACKEND }}"
-        echo "Frontend service: ${{ env.ECS_SERVICE_FRONTEND }}"
-        echo "Cluster: ${{ env.ECS_CLUSTER }}"
-        echo "Images built and pushed to ECR successfully."
-        echo ""
-        echo "💡 If you want to clean up old services first:"
-        echo "aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service OLD_SERVICE_NAME --desired-count 0"
-        echo "aws ecs delete-service --cluster ${{ env.ECS_CLUSTER }} --service OLD_SERVICE_NAME"
+        echo "✅ Backend service deployment completed"
 
   deploy-s3-cloudfront:
     name: Deploy Frontend to S3 and CloudFront
@@ -216,7 +161,7 @@ jobs:
     - name: Deploy to S3
       working-directory: ./DIY-Smart-Assistant-V2/frontend
       run: |
-        aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+        aws s3 sync dist/ s3://${{ env.S3_BUCKET_FRONTEND }} --delete
 
     - name: Invalidate CloudFront distribution
       run: |

@@ -18,15 +18,38 @@
 | `S3_BUCKET_NAME` | S3存储桶名称 | cheasydiy-production-frontend |
 | `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront分发ID | E1234567890ABC |
 
-### 2. AWS资源确认
+### 2. AWS资源状态确认 ✅
 
-确保以下AWS资源已存在:
+**根据Terraform配置，以下AWS资源已存在并正在运行**:
 
-- [ ] ECS集群: `cheasydiy-production-cluster`
-- [ ] ECR仓库: `cheasydiy/backend`, `cheasydiy/frontend`
-- [ ] ALB: 指向api.cheasydiy.com
-- [ ] CloudFront: 配置cheasydiy.com
-- [ ] Route53: DNS记录配置正确
+#### 🏗️ 基础设施 (已部署)
+- ✅ **VPC**: `cheasydiy-production-vpc` (10.0.0.0/16)
+- ✅ **公共子网**: `cheasydiy-production-public-1/2` 
+- ✅ **私有子网**: `cheasydiy-production-private-1/2`
+- ✅ **安全组**: ALB, ECS, RDS 安全组已配置
+- ✅ **NAT网关**: 用于私有子网访问外网
+
+#### 🐳 容器服务 (已部署)
+- ✅ **ECS集群**: `cheasydiy-production-cluster`
+- ✅ **ECR仓库**: `cheasydiy/backend`, `cheasydiy/frontend`
+- ✅ **ECS后端服务**: `cheasydiy-production-backend` (Fargate)
+- ✅ **任务定义**: backend任务已配置 (512 CPU, 1024 Memory)
+
+#### 🌐 网络和CDN (已部署)
+- ✅ **ALB**: 应用负载均衡器连接ECS后端
+- ✅ **S3存储桶**: `cheasydiy-production-frontend` (前端静态文件)
+- ✅ **CloudFront**: 全球CDN分发
+- ✅ **Route53**: DNS记录指向cheasydiy.com
+- ✅ **SSL证书**: ACM证书已配置
+
+#### 🗄️ 数据存储 (已部署)
+- ✅ **RDS PostgreSQL**: `cheasydiy-production-db`
+- ✅ **Secrets Manager**: 存储API密钥和敏感信息
+- ✅ **S3上传桶**: `cheasydiy-production-uploads`
+
+#### 📊 监控和日志 (已部署)
+- ✅ **CloudWatch**: 日志组 `/ecs/cheasydiy-production`
+- ✅ **IAM角色**: 任务执行和应用角色已配置
 
 ### 3. 数据库配置 (如果使用RDS)
 
@@ -117,6 +140,43 @@ git revert HEAD
 git push origin aws-deployment
 ```
 
+## 🎯 S3缓存控制配置（手动配置）
+
+由于AWS CLI在GitHub Actions中的缓存控制命令语法问题，建议通过AWS控制台手动配置：
+
+### 配置步骤：
+
+1. **登录AWS S3控制台**
+2. **进入您的bucket** (`cheasydiy-production-frontend`)
+3. **配置HTML文件缓存**：
+   - 选择 `index.html` 文件
+   - 点击 **操作** → **编辑元数据**
+   - 添加元数据：`Cache-Control: no-cache, no-store, must-revalidate`
+   
+4. **配置静态资源缓存**：
+   - 选择 `assets/` 文件夹下的所有文件
+   - 点击 **操作** → **编辑元数据**
+   - 添加元数据：`Cache-Control: public, max-age=31536000`
+
+### 缓存策略说明：
+
+| 文件类型 | 缓存策略 | 说明 |
+|---------|---------|------|
+| `index.html` | `no-cache, no-store, must-revalidate` | 无缓存，确保更新立即生效 |
+| `assets/*.js` | `public, max-age=31536000` | 1年长期缓存，提升性能 |
+| `assets/*.css` | `public, max-age=31536000` | 1年长期缓存，提升性能 |
+| `assets/*.png/jpg` | `public, max-age=31536000` | 1年长期缓存，提升性能 |
+
+### 验证缓存配置：
+
+```bash
+# 检查HTML文件缓存头
+curl -I https://cheasydiy.com/
+
+# 检查静态资源缓存头
+curl -I https://cheasydiy.com/assets/index-xxxxx.js
+```
+
 ## ✅ 部署成功标志
 
 - [ ] GitHub Actions显示绿色✅
@@ -124,6 +184,7 @@ git push origin aws-deployment
 - [ ] https://cheasydiy.com 可正常访问
 - [ ] 能够上传图片并获得分析结果
 - [ ] 管理界面正常工作
+- [ ] S3缓存控制配置正确
 
 ## 📞 支持
 
