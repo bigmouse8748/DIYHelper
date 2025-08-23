@@ -29,6 +29,26 @@ async def login_options():
     """Handle OPTIONS request for login endpoint"""
     return Response(status_code=200)
 
+@router.options("/register")
+async def register_options():
+    """Handle OPTIONS request for register endpoint"""
+    return Response(status_code=200)
+
+@router.options("/refresh")
+async def refresh_options():
+    """Handle OPTIONS request for refresh endpoint"""
+    return Response(status_code=200)
+
+@router.options("/logout")
+async def logout_options():
+    """Handle OPTIONS request for logout endpoint"""
+    return Response(status_code=200)
+
+@router.options("/verify-email")
+async def verify_email_options():
+    """Handle OPTIONS request for verify-email endpoint"""
+    return Response(status_code=200)
+
 
 @router.post("/register", response_model=UserResponse)
 async def register(

@@ -47,11 +47,11 @@ async def log_requests(request: Request, call_next):
     
     return response
 
-# Trusted hosts (for production)
+# Trusted hosts (for production) - Make sure to allow proper hosts
 if not settings.debug:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=settings.allowed_origins
+        allowed_hosts=["api.cheasydiy.com", "cheasydiy.com", "www.cheasydiy.com", "localhost", "127.0.0.1"]
     )
 
 # CORS middleware - MUST be added last to execute first

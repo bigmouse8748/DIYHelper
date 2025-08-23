@@ -23,6 +23,28 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/our-picks", tags=["our-picks"])
 logger = logging.getLogger(__name__)
 
+
+@router.options("/analyze")
+async def analyze_options():
+    """Handle OPTIONS request for analyze endpoint"""
+    return Response(status_code=200)
+
+@router.options("/create")
+async def create_options():
+    """Handle OPTIONS request for create endpoint"""
+    return Response(status_code=200)
+
+@router.options("/track-click/{product_id}")
+async def track_click_options(product_id: str):
+    """Handle OPTIONS request for track-click endpoint"""
+    return Response(status_code=200)
+
+@router.options("/manual-create")
+async def manual_create_options():
+    """Handle OPTIONS request for manual-create endpoint"""
+    return Response(status_code=200)
+
+
 # Pydantic models for request/response
 class ProductAnalysisRequest(BaseModel):
     product_url: str

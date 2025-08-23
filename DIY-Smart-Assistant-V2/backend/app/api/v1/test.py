@@ -3,6 +3,7 @@ Test endpoints for Our Picks functionality without authentication
 """
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, Form
+from fastapi.responses import Response
 import logging
 
 from ...agents.product_info_agent import ProductInfoAgent
@@ -10,6 +11,12 @@ from ...agents.product_info_agent import ProductInfoAgent
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.options("/our-picks/analyze")
+async def analyze_options():
+    """Handle OPTIONS request for test analyze endpoint"""
+    return Response(status_code=200)
 
 
 @router.post("/our-picks/analyze")

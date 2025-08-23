@@ -4,6 +4,7 @@ Provides real-time statistics and data for admin dashboard
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from datetime import datetime, timedelta
@@ -23,6 +24,17 @@ router = APIRouter(
 )
 
 logger = logging.getLogger(__name__)
+
+
+@router.options("/products/analyze-url")
+async def analyze_url_options():
+    """Handle OPTIONS request for analyze-url endpoint"""
+    return Response(status_code=200)
+
+@router.options("/products/create-from-analysis")
+async def create_from_analysis_options():
+    """Handle OPTIONS request for create-from-analysis endpoint"""
+    return Response(status_code=200)
 
 
 @router.get("/dashboard/stats")

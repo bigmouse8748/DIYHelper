@@ -6,6 +6,7 @@ from typing import Any, Optional
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from passlib.context import CryptContext
@@ -23,6 +24,17 @@ from ...core.auth import get_current_user, require_admin
 from ...core.security import PasswordService
 
 router = APIRouter()
+
+
+@router.options("/admin/users")
+async def admin_users_options():
+    """Handle OPTIONS request for admin users endpoint"""
+    return Response(status_code=200)
+
+@router.options("/admin/users/{user_id}/verify-email")
+async def admin_verify_email_options(user_id: int):
+    """Handle OPTIONS request for admin verify-email endpoint"""
+    return Response(status_code=200)
 
 
 @router.get("/profile", response_model=UserResponse)
