@@ -1,0 +1,12 @@
+{
+  "containerOverrides": [
+    {
+      "name": "backend",
+      "command": [
+        "python",
+        "-c", 
+        "import asyncio\nimport asyncpg\nimport bcrypt\nfrom datetime import datetime\n\nasync def create_admin():\n    conn = await asyncpg.connect(\n        host='cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com',\n        port=5432,\n        user='dbadmin',\n        password='ChEasyDiy2024!',\n        database='cheasydiy'\n    )\n    \n    username = 'admin'\n    email = 'admin@cheasydiy.com'\n    password = 'AdminPass123!'\n    \n    salt = bcrypt.gensalt()\n    hashed = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')\n    \n    await conn.execute(\n        'INSERT INTO users (username, email, password_hash, full_name, user_type, is_active, email_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, user_type = EXCLUDED.user_type, updated_at = EXCLUDED.updated_at',\n        username, email, hashed, 'Administrator', 'admin', True, True, datetime.utcnow(), datetime.utcnow()\n    )\n    \n    print('Admin user created successfully!')\n    print(f'Username: {username}')\n    print(f'Email: {email}')\n    print(f'Password: {password}')\n    print('User type: admin')\n    \n    await conn.close()\n\nasyncio.run(create_admin())"
+      ]
+    }
+  ]
+}

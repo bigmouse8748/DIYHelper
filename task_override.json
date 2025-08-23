@@ -1,0 +1,12 @@
+{
+  "containerOverrides": [
+    {
+      "name": "backend",
+      "command": [
+        "python",
+        "-c", 
+        "import asyncio; import asyncpg; async def main(): conn = await asyncpg.connect(host='cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com', port=5432, user='dbadmin', password='ChEasyDiy2024!', database='cheasydiy'); count = await conn.fetchval('SELECT COUNT(*) FROM users'); print(f'Total users: {count}'); if count > 0: users = await conn.fetch('SELECT id, username, email FROM users LIMIT 3'); [print(f'User: {u[\"username\"]} - {u[\"email\"]}') for u in users]; await conn.close(); asyncio.run(main())"
+      ]
+    }
+  ]
+}

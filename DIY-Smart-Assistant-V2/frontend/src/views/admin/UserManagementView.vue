@@ -328,7 +328,7 @@ import {
 import axios from 'axios'
 
 // API configuration
-const API_BASE_URL = 'http://localhost:8000/api/v1'
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImFkbWludXNlciIsInVzZXJfdHlwZSI6ImFkbWluIiwiZXhwIjoxNzU1ODk1Mzc2LCJpYXQiOjE3NTU4OTM1NzYsInR5cGUiOiJhY2Nlc3MifQ._gsxNTJnRAZzd0fEKrGMisq5szyE0G7vDEnzJk9dQgc'
 
 // Current admin user ID (from token)

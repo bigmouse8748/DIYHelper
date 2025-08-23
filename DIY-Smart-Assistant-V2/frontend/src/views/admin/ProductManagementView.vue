@@ -695,7 +695,7 @@ import axios from 'axios'
 // import EditProductForm from '@/components/admin/EditProductForm.vue'
 
 // API Base URL
-const API_BASE_URL = 'http://localhost:8000/api/v1'
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
 
 // Auth token
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImFkbWludXNlciIsInVzZXJfdHlwZSI6ImFkbWluIiwiZXhwIjoxNzU1ODk1Mzc2LCJpYXQiOjE3NTU4OTM1NzYsInR5cGUiOiJhY2Nlc3MifQ._gsxNTJnRAZzd0fEKrGMisq5szyE0G7vDEnzJk9dQgc'
