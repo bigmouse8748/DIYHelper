@@ -58,6 +58,11 @@ if not settings.debug:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Production origins
+        "https://cheasydiy.com",
+        "https://www.cheasydiy.com",
+        "https://api.cheasydiy.com",
+        # Development origins
         "http://localhost:8080",
         "http://localhost:8081",
         "http://localhost:8082",
@@ -68,6 +73,9 @@ app.add_middleware(
         "http://localhost:8087",
         "http://localhost:8088",  # Current frontend port
         "http://127.0.0.1:8088",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
     ],
     allow_credentials=True,
     allow_methods=["*"],
