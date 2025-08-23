@@ -162,19 +162,14 @@ jobs:
     - name: Deploy to S3
       working-directory: ./DIY-Smart-Assistant-V2/frontend
       run: |
-        # Sync all files except index.html and JSON files with long cache
-        aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} \
-          --delete \
-          --cache-control "public, max-age=31536000" \
-          --exclude "index.html" \
-          --exclude "*.json"
+        # First sync all files with default cache settings
+        aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
         
-        # Upload index.html with no-cache
-        aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html \
-          --cache-control "no-cache, no-store, must-revalidate"
+        # Then override cache settings for specific files
+        aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html --cache-control "no-cache, no-store, must-revalidate"
         
-        # Upload JSON files with no-cache
-        find dist/ -name "*.json" -exec aws s3 cp {} s3://${{ secrets.S3_BUCKET_NAME }}/ --cache-control "no-cache, no-store, must-revalidate" \;
+        # Set cache control for static assets
+        aws s3 sync dist/assets/ s3://${{ secrets.S3_BUCKET_NAME }}/assets/ --cache-control "public, max-age=31536000"
 
     - name: Invalidate CloudFront distribution
       run: |
