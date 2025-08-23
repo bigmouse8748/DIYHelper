@@ -87,12 +87,46 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler"""
     logger.error(f"Global exception: {str(exc)}", exc_info=True)
+    
+    # Get origin from request headers for CORS
+    origin = request.headers.get("origin")
+    headers = {}
+    
+    # Add CORS headers if origin is allowed
+    allowed_origins = [
+        "https://cheasydiy.com",
+        "https://www.cheasydiy.com",
+        "https://api.cheasydiy.com",
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:8082",
+        "http://localhost:8083",
+        "http://localhost:8084",
+        "http://localhost:8085",
+        "http://localhost:8086",
+        "http://localhost:8087",
+        "http://localhost:8088",
+        "http://127.0.0.1:8088",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+    ]
+    
+    if origin in allowed_origins:
+        headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal Server Error",
             "message": "An unexpected error occurred. Please try again later."
-        }
+        },
+        headers=headers
     )
 
 
