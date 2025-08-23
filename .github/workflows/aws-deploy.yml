@@ -126,21 +126,35 @@ jobs:
           echo "frontend-exists=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Update ECS service (Backend)
+    - name: Update ECS service with new image (Backend)
       if: steps.check-services.outputs.backend-exists == 'true'
       run: |
+        # Get current task definition
+        TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_BACKEND }} --query 'services[0].taskDefinition' --output text)
+        
+        # Update service to use new image (ECS will handle rolling deployment)
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE_BACKEND }} \
-          --force-new-deployment
+          --force-new-deployment \
+          --deployment-configuration "maximumPercent=200,minimumHealthyPercent=50"
+        
+        echo "🔄 Backend service updated with rolling deployment strategy"
 
-    - name: Update ECS service (Frontend)
+    - name: Update ECS service with new image (Frontend)
       if: steps.check-services.outputs.frontend-exists == 'true'
       run: |
+        # Get current task definition
+        TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_FRONTEND }} --query 'services[0].taskDefinition' --output text)
+        
+        # Update service to use new image (ECS will handle rolling deployment)
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE_FRONTEND }} \
-          --force-new-deployment
+          --force-new-deployment \
+          --deployment-configuration "maximumPercent=200,minimumHealthyPercent=50"
+        
+        echo "🔄 Frontend service updated with rolling deployment strategy"
 
     - name: Wait for services to stabilize
       if: steps.check-services.outputs.backend-exists == 'true' || steps.check-services.outputs.frontend-exists == 'true'
@@ -164,6 +178,10 @@ jobs:
         echo "Frontend service: ${{ env.ECS_SERVICE_FRONTEND }}"
         echo "Cluster: ${{ env.ECS_CLUSTER }}"
         echo "Images built and pushed to ECR successfully."
+        echo ""
+        echo "💡 If you want to clean up old services first:"
+        echo "aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service OLD_SERVICE_NAME --desired-count 0"
+        echo "aws ecs delete-service --cluster ${{ env.ECS_CLUSTER }} --service OLD_SERVICE_NAME"
 
   deploy-s3-cloudfront:
     name: Deploy Frontend to S3 and CloudFront
