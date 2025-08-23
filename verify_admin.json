@@ -1,0 +1,12 @@
+{
+  "containerOverrides": [
+    {
+      "name": "backend",
+      "command": [
+        "python",
+        "-c", 
+        "import asyncio\nimport asyncpg\nfrom datetime import datetime\n\nasync def verify_admin():\n    conn = await asyncpg.connect(\n        host='cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com',\n        port=5432,\n        user='dbadmin',\n        password='ChEasyDiy2024!',\n        database='cheasydiy'\n    )\n    \n    # Check if admin user exists\n    admin = await conn.fetchrow('SELECT id, username, email, user_type FROM users WHERE email = $1', 'admin@cheasydiy.com')\n    \n    if admin:\n        print(f'✓ Admin user exists: {admin}')\n    else:\n        print('❌ Admin user not found')\n        \n    # List all users\n    users = await conn.fetch('SELECT id, username, email, user_type FROM users LIMIT 5')\n    print(f'All users: {users}')\n    \n    await conn.close()\n\nasyncio.run(verify_admin())"
+      ]
+    }
+  ]
+}

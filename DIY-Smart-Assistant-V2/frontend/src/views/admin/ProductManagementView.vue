@@ -697,8 +697,11 @@ import axios from 'axios'
 // API Base URL
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
 
+import { useAuthStore } from '@/stores/auth'
+
 // Auth token
-const getAuthToken = () => localStorage.getItem('access_token')
+const authStore = useAuthStore()
+const getAuthToken = () => authStore.accessToken
 
 // Image utility function
 const getImageUrl = (imageUrl: string, category: string = 'other') => {

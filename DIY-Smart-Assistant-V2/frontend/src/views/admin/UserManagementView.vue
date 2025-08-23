@@ -326,10 +326,12 @@ import {
   Key
 } from '@element-plus/icons-vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
 // API configuration
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
-const getAuthToken = () => localStorage.getItem('access_token')
+const authStore = useAuthStore()
+const getAuthToken = () => authStore.accessToken
 
 // Current admin user ID (from token)
 const currentUserId = ref(4)

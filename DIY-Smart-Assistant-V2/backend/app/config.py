@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     app_name: str = "DIY Smart Assistant"
     app_version: str = "2.0.0"
     debug: bool = False  # Default to False for production
-    secret_key: str = secrets.token_urlsafe(32)
+    secret_key: str = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
     
     # Database
     database_url: str = "sqlite:///./diy_assistant.db"
