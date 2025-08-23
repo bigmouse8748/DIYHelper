@@ -79,11 +79,11 @@
             "secrets": [
                 {
                     "name": "OPENAI_API_KEY",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets-wiSK81:OPENAI_API_KEY::"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets:OPENAI_API_KEY::"
                 },
                 {
                     "name": "JWT_SECRET_KEY",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets-wiSK81:JWT_SECRET_KEY::"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets:JWT_SECRET_KEY::"
                 }
             ],
             "healthCheck": {
