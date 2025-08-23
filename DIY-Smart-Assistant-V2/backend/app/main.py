@@ -93,9 +93,14 @@ async def startup():
     """Application startup event"""
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     
-    # Note: Database migrations should be run separately during deployment
-    # await create_tables()  # Commented out - use Alembic migrations instead
-    logger.info("Application started - Database migrations handled by deployment process")
+    # Create database tables on startup (for compatibility with existing deployment)
+    try:
+        await create_tables()
+        logger.info("Database tables created/verified successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        # Continue startup anyway - tables might already exist
+    logger.info("Application started successfully")
 
 # Include API router
 app.include_router(api_router)
@@ -107,7 +112,7 @@ async def shutdown():
     logger.info("Shutting down application")
 
 
-# Health check endpoint
+# Health check endpoints
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -117,6 +122,11 @@ async def health_check():
         "version": settings.app_version,
         "timestamp": time.time()
     }
+
+@app.get("/api/test")
+async def api_test():
+    """API test endpoint for ALB health checks"""
+    return {"status": "ok", "message": "API is working"}
 
 
 # Root endpoint
