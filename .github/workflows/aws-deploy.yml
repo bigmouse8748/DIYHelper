@@ -162,14 +162,7 @@ jobs:
     - name: Deploy to S3
       working-directory: ./DIY-Smart-Assistant-V2/frontend
       run: |
-        # First sync all files with default cache settings
         aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
-        
-        # Then set specific cache control for index.html
-        aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/ --cache-control "no-cache, no-store, must-revalidate"
-        
-        # Set cache control for static assets
-        aws s3 sync dist/assets/ s3://${{ secrets.S3_BUCKET_NAME }}/assets/ --cache-control "public, max-age=31536000"
 
     - name: Invalidate CloudFront distribution
       run: |
