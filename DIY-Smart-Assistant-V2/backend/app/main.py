@@ -135,46 +135,20 @@ async def startup():
     """Application startup event"""
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     
-    # Create database tables on startup (for compatibility with existing deployment)
+    # 自动同步数据库schema
     try:
-        await create_tables()
-        logger.info("Database tables created/verified successfully")
+        from .sync_database_schema import sync_database_schema
+        await sync_database_schema()
+        logger.info("Database schema synchronized successfully")
     except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        # Continue startup anyway - tables might already exist
-    
-    # Add missing columns if tables exist but schema is outdated
-    if not settings.database_url.startswith("sqlite"):
+        logger.error(f"Database schema synchronization failed: {e}")
+        # 回退到基本的表创建
         try:
-            from sqlalchemy import text
-            from .database import engine
-            
-            async with engine.begin() as conn:
-                # Add missing columns (safe to run multiple times with IF NOT EXISTS)
-                migrations = [
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255)",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(255)",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255)",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP"
-                ]
-                
-                for migration in migrations:
-                    try:
-                        await conn.execute(text(migration))
-                        logger.info(f"Migration executed: {migration.split('ADD COLUMN IF NOT EXISTS')[1].split()[0]}")
-                    except Exception as e:
-                        logger.warning(f"Migration skipped: {e}")
-                        
-            logger.info("Database schema updated successfully")
-        except Exception as e:
-            logger.error(f"Schema migration failed: {e}")
-            # Continue anyway - might not have permissions
+            await create_tables()
+            logger.info("Fallback: Database tables created/verified successfully")
+        except Exception as fallback_error:
+            logger.error(f"Database initialization completely failed: {fallback_error}")
+            # Continue startup anyway - tables might already exist
     
     logger.info("Application started successfully")
 

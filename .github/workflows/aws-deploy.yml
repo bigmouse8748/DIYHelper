@@ -109,17 +109,17 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest
 
-    - name: Run Database Migrations
+    - name: Run Database Schema Synchronization
       run: |
-        # Run database migrations before deploying new version
-        echo "🗄️ Starting database migration process..."
+        # Run database schema sync before deploying new version
+        echo "🗄️ Starting database schema synchronization..."
         
         # Get the latest task definition that was just built
         TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition cheasydiy-production-backend --query 'taskDefinition.taskDefinitionArn' --output text)
         echo "Using task definition: $TASK_DEF_ARN"
         
-        # Run migration task with proper error handling
-        MIGRATION_TASK=$(aws ecs run-task \
+        # Run schema sync task with the new sync script
+        SYNC_TASK=$(aws ecs run-task \
           --cluster ${{ env.ECS_CLUSTER }} \
           --task-definition $TASK_DEF_ARN \
           --launch-type FARGATE \
@@ -127,35 +127,36 @@ jobs:
           --overrides '{
             "containerOverrides": [{
               "name": "backend",
-              "command": ["sh", "-c", "cd /app && python -c \"from app.database import create_tables; import asyncio; asyncio.run(create_tables())\" && echo \"Migration completed successfully\""]
+              "command": ["sh", "-c", "cd /app && python -c \"from app.sync_database_schema import sync_database_schema, test_database_connection; import asyncio; asyncio.run(test_database_connection()) and asyncio.run(sync_database_schema())\" && echo \"Schema synchronization completed successfully\""]
             }]
           }' \
           --query 'tasks[0].taskArn' --output text)
         
-        echo "Migration task started: $MIGRATION_TASK"
+        echo "Schema sync task started: $SYNC_TASK"
         
-        # Wait for migration to complete (with timeout)
-        echo "⏳ Waiting for migration to complete..."
-        aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $MIGRATION_TASK
+        # Wait for sync to complete (with timeout)
+        echo "⏳ Waiting for schema synchronization to complete..."
+        aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $SYNC_TASK
         
-        # Check if migration succeeded
-        EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $MIGRATION_TASK --query 'tasks[0].containers[0].exitCode' --output text)
+        # Check if sync succeeded
+        EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $SYNC_TASK --query 'tasks[0].containers[0].exitCode' --output text)
         
         if [ "$EXIT_CODE" != "0" ]; then
-          echo "❌ Database migration failed with exit code: $EXIT_CODE"
+          echo "❌ Database schema synchronization failed with exit code: $EXIT_CODE"
           
           # Get logs for debugging
-          echo "📋 Migration task logs:"
+          echo "📋 Schema sync task logs:"
           aws logs get-log-events \
             --log-group-name "/ecs/cheasydiy-production" \
-            --log-stream-name "backend/backend/$(echo $MIGRATION_TASK | cut -d'/' -f3)" \
+            --log-stream-name "backend/backend/$(echo $SYNC_TASK | cut -d'/' -f3)" \
             --query 'events[*].message' \
             --output text || echo "Could not retrieve logs"
           
           exit 1
         fi
         
-        echo "✅ Database migrations completed successfully"
+        echo "✅ Database schema synchronization completed successfully"
+        echo "📊 Schema is now synchronized with local SQLAlchemy models"
 
     - name: Update Backend Service to use Fargate Spot with Fallback
       run: |
