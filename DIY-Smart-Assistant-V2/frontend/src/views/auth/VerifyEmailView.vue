@@ -66,6 +66,7 @@ import {
   CircleClose,
   Warning
 } from '@element-plus/icons-vue'
+import api from '@/utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -113,20 +114,10 @@ const verifyEmail = async (token: string) => {
   error.value = false
   
   try {
-    const response = await fetch(`http://localhost:8000/api/v1/auth/verify-email?token=${token}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await api.post(`/api/v1/auth/verify-email?token=${token}`)
     
-    if (response.ok) {
-      verified.value = true
-      ElMessage.success('Email verified successfully!')
-    } else {
-      const data = await response.json()
-      throw new Error(data.message || 'Verification failed')
-    }
+    verified.value = true
+    ElMessage.success('Email verified successfully!')
   } catch (err: any) {
     error.value = true
     errorMessage.value = err.message || 'An unexpected error occurred'

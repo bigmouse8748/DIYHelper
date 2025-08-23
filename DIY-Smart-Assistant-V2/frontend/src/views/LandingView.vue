@@ -148,6 +148,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import api, { AUTH_ENDPOINTS, AGENT_ENDPOINTS } from '@/utils/api'
 
 const router = useRouter()
 
@@ -171,8 +172,8 @@ const handleSignIn = () => {
 // Debug functions
 const testBackend = async () => {
   try {
-    const response = await fetch('http://localhost:8000/api/v1/agents/available')
-    const data = await response.json()
+    const response = await api.get(AGENT_ENDPOINTS.AVAILABLE_AGENTS)
+    const data = response.data
     console.log('Backend API test successful:', data)
     backendStatus.value = {
       text: 'Connected',
@@ -185,7 +186,7 @@ const testBackend = async () => {
       text: 'Failed',
       class: 'status-error'
     }
-    ElMessage.error('Backend API test failed. Make sure the backend is running on port 8000.')
+    ElMessage.error('Backend API test failed. Make sure the backend is running.')
   }
 }
 
@@ -196,14 +197,8 @@ const testLogin = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:8000/api/v1/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(loginData)
-    })
-    const data = await response.json()
+    const response = await api.post(AUTH_ENDPOINTS.LOGIN, loginData)
+    const data = response.data
     console.log('Login test successful:', data)
     ElMessage.success('Login test successful! Check console for details.')
   } catch (error) {

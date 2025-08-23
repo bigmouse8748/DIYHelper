@@ -329,7 +329,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
 // API configuration
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
+const API_BASE_URL = 'https://api.cheasydiy.com/api/v1'
 const authStore = useAuthStore()
 const getAuthToken = () => authStore.accessToken
 

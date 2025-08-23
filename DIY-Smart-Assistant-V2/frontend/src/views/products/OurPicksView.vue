@@ -290,7 +290,7 @@ import {
   Picture,
   Share
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import api from '@/utils/api'
 
 // State
 const loading = ref(false)
@@ -334,7 +334,7 @@ const fetchProducts = async () => {
     }
     if (filters.brand) params.append('search', filters.brand)
 
-    const response = await axios.get(`http://localhost:8000/api/v1/our-picks/public/products?${params}`)
+    const response = await api.get(`/api/v1/our-picks/public/products?${params}`)
     
     if (response.data.success) {
       // Transform API data to match frontend format

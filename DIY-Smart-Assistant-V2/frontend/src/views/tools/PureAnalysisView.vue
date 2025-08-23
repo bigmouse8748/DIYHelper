@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import api from '@/utils/api'
 
 const message = ref('')
 let files: File[] = []
@@ -55,19 +56,16 @@ const analyze = async () => {
     formData.append('project_type', 'general')
     formData.append('budget_range', 'medium')
     
-    const response = await fetch('http://localhost:8000/api/v1/agents/project/analyze', {
-      method: 'POST',
-      body: formData
+    const response = await api.post('/api/v1/agents/project/analyze', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     })
     
-    const data = await response.json()
+    const data = response.data
     
-    if (response.ok) {
-      message.value = 'Analysis successful! Check console for results.'
-      console.log('Results:', data)
-    } else {
-      message.value = `Error: ${data.detail || 'Analysis failed'}`
-    }
+    message.value = 'Analysis successful! Check console for results.'
+    console.log('Results:', data)
     
   } catch (error) {
     message.value = `Error: ${error}`

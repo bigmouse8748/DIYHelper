@@ -161,6 +161,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/utils/api'
 
 const authStore = useAuthStore()
 
@@ -214,24 +215,13 @@ const sendMessage = async () => {
   await scrollToBottom()
 
   try {
-    const response = await fetch('http://localhost:8000/api/v1/agents/smart-tool-finder/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.accessToken}`
-      },
-      body: JSON.stringify({
-        query: message,
-        filters: filters.value,
-        conversation_history: messages.value.slice(-10) // Last 10 messages for context
-      })
+    const response = await api.post('/api/v1/agents/smart-tool-finder/chat', {
+      query: message,
+      filters: filters.value,
+      conversation_history: messages.value.slice(-10) // Last 10 messages for context
     })
 
-    if (!response.ok) {
-      throw new Error('Failed to get response')
-    }
-
-    const result = await response.json()
+    const result = response.data
     
     if (result.success) {
       const data = result.data
