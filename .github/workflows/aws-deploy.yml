@@ -109,25 +109,25 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest
 
-    - name: Update ECS service (Backend)
-      run: |
-        aws ecs update-service \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE_BACKEND }} \
-          --force-new-deployment
+    # - name: Update ECS service (Backend)
+    #   run: |
+    #     aws ecs update-service \
+    #       --cluster ${{ env.ECS_CLUSTER }} \
+    #       --service ${{ env.ECS_SERVICE_BACKEND }} \
+    #       --force-new-deployment
 
-    - name: Update ECS service (Frontend)
-      run: |
-        aws ecs update-service \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE_FRONTEND }} \
-          --force-new-deployment
+    # - name: Update ECS service (Frontend)  
+    #   run: |
+    #     aws ecs update-service \
+    #       --cluster ${{ env.ECS_CLUSTER }} \
+    #       --service ${{ env.ECS_SERVICE_FRONTEND }} \
+    #       --force-new-deployment
 
-    - name: Wait for services to stabilize
-      run: |
-        aws ecs wait services-stable \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE_BACKEND }} ${{ env.ECS_SERVICE_FRONTEND }}
+    # - name: Wait for services to stabilize
+    #   run: |
+    #     aws ecs wait services-stable \
+    #       --cluster ${{ env.ECS_CLUSTER }} \
+    #       --services ${{ env.ECS_SERVICE_BACKEND }} ${{ env.ECS_SERVICE_FRONTEND }}
 
   deploy-s3-cloudfront:
     name: Deploy Frontend to S3 and CloudFront
@@ -173,16 +173,16 @@ jobs:
   notify:
     name: Notify Deployment Status
     runs-on: ubuntu-latest
-    needs: [build-and-deploy, deploy-s3-cloudfront]
+    needs: [deploy-s3-cloudfront]
     if: always()
     
     steps:
     - name: Send notification
       run: |
-        if [ "${{ needs.build-and-deploy.result }}" == "success" ] && [ "${{ needs.deploy-s3-cloudfront.result }}" == "success" ]; then
-          echo "✅ Deployment successful!"
+        if [ "${{ needs.deploy-s3-cloudfront.result }}" == "success" ]; then
+          echo "✅ Frontend deployment to S3/CloudFront successful!"
           # Add notification logic here (Slack, email, etc.)
         else
-          echo "❌ Deployment failed!"
+          echo "❌ Frontend deployment failed!"
           # Add failure notification logic here
         fi
