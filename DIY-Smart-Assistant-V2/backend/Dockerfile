@@ -32,6 +32,11 @@ USER appuser
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
+# Production environment variables (will be overridden by ECS task definition)
+ENV DEBUG=false
+ENV PORT=8000
+ENV HOST=0.0.0.0
+
 # Expose port
 EXPOSE 8000
 
