@@ -62,13 +62,27 @@ async def sync_database_schema():
                 logger.info("确保所有表存在")
                 
                 # 检查并添加缺失的列（生产环境的安全做法）
-                # 由于asyncpg的限制，我们使用同步连接来检查schema
-                sync_engine = engine.sync_engine
-                inspector = inspect(sync_engine)
-                
+                # 使用SQL查询来检查现有列，避免同步Inspector问题
                 for table_name, table in Base.metadata.tables.items():
-                    if inspector.has_table(table_name):
-                        existing_columns = [col['name'] for col in inspector.get_columns(table_name)]
+                    # 检查表是否存在
+                    table_exists_result = await conn.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_name = :table_name
+                        )
+                    """), {"table_name": table_name})
+                    
+                    table_exists = table_exists_result.scalar()
+                    
+                    if table_exists:
+                        # 获取现有列
+                        existing_cols_result = await conn.execute(text("""
+                            SELECT column_name
+                            FROM information_schema.columns 
+                            WHERE table_name = :table_name
+                        """), {"table_name": table_name})
+                        
+                        existing_columns = [row[0] for row in existing_cols_result.fetchall()]
                         
                         for column in table.columns:
                             if column.name not in existing_columns:
