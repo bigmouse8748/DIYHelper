@@ -698,7 +698,7 @@ import axios from 'axios'
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
 
 // Auth token
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImFkbWludXNlciIsInVzZXJfdHlwZSI6ImFkbWluIiwiZXhwIjoxNzU1ODk1Mzc2LCJpYXQiOjE3NTU4OTM1NzYsInR5cGUiOiJhY2Nlc3MifQ._gsxNTJnRAZzd0fEKrGMisq5szyE0G7vDEnzJk9dQgc'
+const getAuthToken = () => localStorage.getItem('access_token')
 
 // Image utility function
 const getImageUrl = (imageUrl: string, category: string = 'other') => {
@@ -825,7 +825,7 @@ const fetchProducts = async () => {
     
     const response = await axios.get(`${API_BASE_URL}/our-picks/admin/products?${params.toString()}`, {
       headers: {
-        'Authorization': `Bearer ${AUTH_TOKEN}`,
+        'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json'
       }
     })
@@ -941,7 +941,7 @@ const toggleFeatured = async (product: any) => {
     
     await axios.put(`${API_BASE_URL}/our-picks/admin/products/${product.id}`, updateData, {
       headers: {
-        'Authorization': `Bearer ${AUTH_TOKEN}`,
+        'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     })
@@ -977,7 +977,7 @@ const analyzeProduct = async () => {
     
     const response = await axios.post(`${API_BASE_URL}/our-picks/analyze`, formData, {
       headers: {
-        'Authorization': `Bearer ${AUTH_TOKEN}`,
+        'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'multipart/form-data'
       }
     })
@@ -1059,7 +1059,7 @@ const updateExistingProduct = async () => {
   
   await axios.put(`${API_BASE_URL}/our-picks/admin/products/${editingProduct.value.id}`, updateData, {
     headers: {
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
+      'Authorization': `Bearer ${getAuthToken()}`,
       'Content-Type': 'application/x-www-form-urlencoded'
     }
   })
@@ -1077,7 +1077,7 @@ const createFromAnalysis = async () => {
   
   await axios.post(`${API_BASE_URL}/our-picks/create`, createData, {
     headers: {
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
+      'Authorization': `Bearer ${getAuthToken()}`,
       'Content-Type': 'application/json'
     }
   })
@@ -1102,7 +1102,7 @@ const createManualProduct = async () => {
   
   await axios.post(`${API_BASE_URL}/our-picks/manual-create`, updateData, {
     headers: {
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
+      'Authorization': `Bearer ${getAuthToken()}`,
       'Content-Type': 'application/x-www-form-urlencoded'
     }
   })

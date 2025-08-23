@@ -329,7 +329,7 @@ import axios from 'axios'
 
 // API configuration
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/v1'
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImFkbWludXNlciIsInVzZXJfdHlwZSI6ImFkbWluIiwiZXhwIjoxNzU1ODk1Mzc2LCJpYXQiOjE3NTU4OTM1NzYsInR5cGUiOiJhY2Nlc3MifQ._gsxNTJnRAZzd0fEKrGMisq5szyE0G7vDEnzJk9dQgc'
+const getAuthToken = () => localStorage.getItem('access_token')
 
 // Current admin user ID (from token)
 const currentUserId = ref(4)
@@ -384,12 +384,16 @@ const userFormRules = {
 
 // API helper
 const apiRequest = (method: string, url: string, data?: any) => {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error('No authentication token found. Please login again.')
+  }
   return axios({
     method,
     url: `${API_BASE_URL}${url}`,
     data,
     headers: {
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   })
