@@ -40,9 +40,12 @@ ENV HOST=0.0.0.0
 # Expose port
 EXPOSE 8001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8001/api/v1/health/status || exit 1
+# Health check temporarily disabled for debugging
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#   CMD curl -f http://localhost:8001/api/v1/health/status || exit 1
 
-# Run with gunicorn for production performance
-CMD ["gunicorn", "app.main:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8001", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
+# Debug mode: Test database connection first
+CMD ["python", "test_db_connection.py"]
+
+# Production command (commented for debugging)
+# CMD ["gunicorn", "app.main:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8001", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
