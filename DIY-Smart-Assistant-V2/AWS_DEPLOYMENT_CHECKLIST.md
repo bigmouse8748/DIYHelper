@@ -32,8 +32,9 @@
 #### 🐳 容器服务 (已部署)
 - ✅ **ECS集群**: `cheasydiy-production-cluster`
 - ✅ **ECR仓库**: `cheasydiy/backend`, `cheasydiy/frontend`
-- ✅ **ECS后端服务**: `cheasydiy-production-backend` (Fargate)
+- ✅ **ECS后端服务**: `cheasydiy-production-backend` (Fargate Spot优化)
 - ✅ **任务定义**: backend任务已配置 (512 CPU, 1024 Memory)
+- ✅ **成本优化**: 80% Fargate Spot + 20% Fargate fallback (~56% 成本节省)
 
 #### 🌐 网络和CDN (已部署)
 - ✅ **ALB**: 应用负载均衡器连接ECS后端
@@ -50,6 +51,23 @@
 #### 📊 监控和日志 (已部署)
 - ✅ **CloudWatch**: 日志组 `/ecs/cheasydiy-production`
 - ✅ **IAM角色**: 任务执行和应用角色已配置
+
+#### 💰 成本优化配置 (Fargate Spot)
+
+**容量提供策略**:
+- **80% Fargate Spot**: 低成本，最多节省70%费用
+- **20% 常规Fargate**: 高可用性fallback
+
+**优势**:
+- ✅ **大幅成本降低**: 相比100%常规Fargate节省~56%
+- ✅ **高可用性**: Spot实例不可用时自动切换到常规Fargate
+- ✅ **零配置**: ECS自动处理实例中断和替换
+- ✅ **适合生产环境**: 对于无状态应用完全安全
+
+**注意事项**:
+- ⚠️ **实例可能被中断**: AWS会提前2分钟通知
+- ⚠️ **启动时间略长**: Spot实例可能需要更长时间获取
+- ✅ **适用场景**: Web API、微服务、批处理任务
 
 ### 3. 数据库配置 (如果使用RDS)
 

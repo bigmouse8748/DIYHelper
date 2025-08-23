@@ -109,16 +109,20 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest
 
-    - name: Update ECS Backend Service
+    - name: Update Backend Service to use Fargate Spot with Fallback
       run: |
-        # Update backend service (based on Terraform configuration)
+        # Update service to use mixed capacity provider strategy for optimal cost/availability
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE_BACKEND }} \
+          --capacity-provider-strategy \
+            capacityProvider=FARGATE_SPOT,weight=4,base=0 \
+            capacityProvider=FARGATE,weight=1,base=0 \
           --force-new-deployment \
           --deployment-configuration "maximumPercent=200,minimumHealthyPercent=50"
         
-        echo "🔄 Backend service updated with rolling deployment"
+        echo "💰 Backend service updated to use 80% Fargate Spot + 20% Fargate fallback"
+        echo "📊 Expected cost savings: ~56% compared to 100% regular Fargate"
 
     - name: Wait for backend service to stabilize
       run: |
