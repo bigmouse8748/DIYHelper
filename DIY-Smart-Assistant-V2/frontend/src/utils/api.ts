@@ -2,9 +2,12 @@ import axios from 'axios'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 
+// Get API URL from environment variable or use default for local development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 // Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   timeout: 120000, // Increase timeout to 2 minutes for AI analysis
   headers: {
     'Content-Type': 'application/json'
