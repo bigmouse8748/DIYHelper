@@ -66,6 +66,14 @@
                 {
                     "name": "DB_PASSWORD",
                     "value": "ChEasyDiy2024!"
+                },
+                {
+                    "name": "DEBUG",
+                    "value": "false"
+                },
+                {
+                    "name": "BASE_URL",
+                    "value": "https://api.cheasydiy.com"
                 }
             ],
             "secrets": [
