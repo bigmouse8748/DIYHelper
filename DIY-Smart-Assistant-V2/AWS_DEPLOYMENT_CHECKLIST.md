@@ -52,6 +52,32 @@
 - ✅ **CloudWatch**: 日志组 `/ecs/cheasydiy-production`
 - ✅ **IAM角色**: 任务执行和应用角色已配置
 
+#### 🗄️ 数据库Schema管理 (新增)
+
+**数据库迁移策略**:
+- ✅ **Alembic迁移系统**: 版本化数据库Schema变更
+- ✅ **自动化部署**: GitHub Actions自动运行迁移
+- ✅ **零停机迁移**: 使用临时ECS任务执行迁移
+- ✅ **回滚支持**: 支持Schema版本回滚
+
+**迁移执行流程**:
+1. **构建新镜像**: 包含最新代码和迁移文件
+2. **运行迁移任务**: 临时ECS任务执行 `alembic upgrade head`
+3. **验证迁移**: 检查任务退出码确保成功
+4. **部署新版本**: 迁移成功后更新ECS服务
+
+**手动迁移命令** (如果需要):
+```bash
+# 生成新迁移
+alembic revision --autogenerate -m "Add new fields"
+
+# 应用迁移
+alembic upgrade head
+
+# 回滚迁移
+alembic downgrade -1
+```
+
 #### 💰 成本优化配置 (Fargate Spot)
 
 **容量提供策略**:

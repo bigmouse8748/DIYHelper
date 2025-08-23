@@ -109,6 +109,42 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest
 
+    - name: Run Database Migrations
+      run: |
+        # Run database migrations before deploying new version
+        # Create a temporary ECS task to run migrations
+        
+        # Get the current task definition
+        TASK_DEF_ARN=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_BACKEND }} --query 'services[0].taskDefinition' --output text)
+        
+        # Run migration task
+        aws ecs run-task \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --task-definition $TASK_DEF_ARN \
+          --launch-type FARGATE \
+          --network-configuration "awsvpcConfiguration={subnets=[subnet-023b2d055fd11ede0,subnet-02ee4fc4ee285ca79],securityGroups=[sg-052667c608db180e7],assignPublicIp=DISABLED}" \
+          --overrides '{
+            "containerOverrides": [{
+              "name": "backend",
+              "command": ["python", "-m", "alembic", "upgrade", "head"]
+            }]
+          }' \
+          --query 'tasks[0].taskArn' --output text > migration_task_arn.txt
+        
+        # Wait for migration to complete
+        MIGRATION_TASK=$(cat migration_task_arn.txt)
+        aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $MIGRATION_TASK
+        
+        # Check if migration succeeded
+        EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $MIGRATION_TASK --query 'tasks[0].containers[0].exitCode' --output text)
+        
+        if [ "$EXIT_CODE" != "0" ]; then
+          echo "❌ Database migration failed with exit code: $EXIT_CODE"
+          exit 1
+        fi
+        
+        echo "✅ Database migrations completed successfully"
+
     - name: Update Backend Service to use Fargate Spot with Fallback
       run: |
         # Update service to use mixed capacity provider strategy for optimal cost/availability

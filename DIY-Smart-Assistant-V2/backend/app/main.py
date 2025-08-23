@@ -93,9 +93,9 @@ async def startup():
     """Application startup event"""
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     
-    # Create database tables
-    await create_tables()
-    logger.info("Database tables created successfully")
+    # Note: Database migrations should be run separately during deployment
+    # await create_tables()  # Commented out - use Alembic migrations instead
+    logger.info("Application started - Database migrations handled by deployment process")
 
 # Include API router
 app.include_router(api_router)
