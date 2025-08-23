@@ -36,10 +36,6 @@
                     "value": "us-east-1"
                 },
                 {
-                    "name": "DATABASE_URL",
-                    "value": "postgresql://dbadmin:ChEasyDiy2024!@cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com:5432/cheasydiy"
-                },
-                {
                     "name": "DB_PORT",
                     "value": "5432"
                 },
@@ -64,10 +60,6 @@
                     "value": "cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com"
                 },
                 {
-                    "name": "DB_PASSWORD",
-                    "value": "ChEasyDiy2024!"
-                },
-                {
                     "name": "DEBUG",
                     "value": "false"
                 },
@@ -84,6 +76,10 @@
                 {
                     "name": "JWT_SECRET_KEY",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets:JWT_SECRET_KEY::"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:571600828655:secret:cheasydiy-production-secrets:DB_PASSWORD::"
                 }
             ],
             "healthCheck": {

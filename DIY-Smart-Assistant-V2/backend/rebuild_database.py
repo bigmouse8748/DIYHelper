@@ -17,8 +17,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 数据库连接配置
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://dbadmin:ChEasyDiy2024!@cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com:5432/cheasydiy")
+# 数据库连接配置 - 使用环境变量
+DATABASE_URL = os.getenv("DATABASE_URL") or f"postgresql://{os.getenv('DB_USER', 'dbadmin')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'cheasydiy')}"
+
+if not os.getenv("DB_PASSWORD"):
+    print("❌ 错误: DB_PASSWORD 环境变量未设置")
+    print("   请设置环境变量: export DB_PASSWORD=your_password")
+    exit(1)
 
 async def rebuild_database():
     """完整重建数据库"""

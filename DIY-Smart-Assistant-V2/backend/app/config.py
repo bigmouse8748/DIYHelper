@@ -3,10 +3,11 @@ Application Configuration
 Manages all configuration settings using Pydantic Settings
 """
 
-from typing import List
+from typing import List, Optional
 from pydantic import validator
 from pydantic_settings import BaseSettings
 import secrets
+import os
 
 
 class Settings(BaseSettings):
@@ -20,6 +21,13 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str = "sqlite:///./diy_assistant.db"
+    
+    # Database connection components (for production)
+    db_host: Optional[str] = None
+    db_port: Optional[int] = None
+    db_user: Optional[str] = None
+    db_password: Optional[str] = None
+    db_name: Optional[str] = None
     
     # Authentication
     access_token_expire_minutes: int = 30
@@ -51,6 +59,23 @@ class Settings(BaseSettings):
     
     # Sentry (Optional)  
     sentry_dsn: str = ""
+    
+    @validator("database_url")
+    def build_database_url(cls, v, values):
+        """Build database URL from individual components if available"""
+        # If we have individual database components, build PostgreSQL URL
+        db_host = values.get('db_host') or os.getenv('DB_HOST')
+        db_port = values.get('db_port') or os.getenv('DB_PORT')
+        db_user = values.get('db_user') or os.getenv('DB_USER')
+        db_password = values.get('db_password') or os.getenv('DB_PASSWORD')
+        db_name = values.get('db_name') or os.getenv('DB_NAME')
+        
+        if all([db_host, db_user, db_password, db_name]):
+            port = db_port or 5432
+            return f"postgresql://{db_user}:{db_password}@{db_host}:{port}/{db_name}"
+        
+        # Otherwise use the provided database_url or DATABASE_URL env var
+        return os.getenv('DATABASE_URL', v)
     
     @validator("allowed_origins")
     def parse_cors_origins(cls, v: str) -> List[str]:

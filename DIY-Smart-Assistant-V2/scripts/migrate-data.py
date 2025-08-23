@@ -13,11 +13,11 @@ from datetime import datetime
 # 配置
 LOCAL_DB_PATH = "../backend/instance/app.db"  # 本地SQLite数据库路径
 RDS_CONNECTION = {
-    "host": "cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com",
-    "port": 5432,
-    "database": "cheasydiy",
-    "user": "dbadmin",
-    "password": "ChEasyDiy2024!"  # 从环境变量或Secrets Manager获取
+    "host": os.getenv("DB_HOST", "cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "database": os.getenv("DB_NAME", "cheasydiy"),
+    "user": os.getenv("DB_USER", "dbadmin"),
+    "password": os.getenv("DB_PASSWORD")  # 必须从环境变量获取，不能硬编码
 }
 
 async def migrate_table_data(table_name: str, sqlite_conn, pg_conn):
@@ -54,6 +54,13 @@ async def migrate_table_data(table_name: str, sqlite_conn, pg_conn):
 async def main():
     """主迁移流程"""
     print("🚀 开始数据迁移: SQLite -> PostgreSQL")
+    
+    # 验证环境变量
+    if not os.getenv("DB_PASSWORD"):
+        print("❌ 错误: DB_PASSWORD 环境变量未设置")
+        print("   请设置环境变量: export DB_PASSWORD=your_password")
+        print("   或使用: DB_PASSWORD=your_password python migrate-data.py")
+        return
     
     # 检查本地数据库是否存在
     if not os.path.exists(LOCAL_DB_PATH):

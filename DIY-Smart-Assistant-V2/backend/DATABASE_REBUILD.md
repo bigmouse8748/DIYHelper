@@ -60,8 +60,9 @@ aws ecs update-service \
 ```bash
 cd DIY-Smart-Assistant-V2/backend
 
-# 设置环境变量
-export DATABASE_URL="postgresql://dbadmin:ChEasyDiy2024!@cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com:5432/cheasydiy"
+# 设置环境变量（请使用实际密码）
+export DB_PASSWORD="your_actual_password_here"
+export DATABASE_URL="postgresql://dbadmin:${DB_PASSWORD}@cheasydiy-production-db.c9sieeomsxup.us-east-1.rds.amazonaws.com:5432/cheasydiy"
 
 # 执行重建（小心！这会影响生产数据库）
 python rebuild_database.py
