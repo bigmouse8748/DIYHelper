@@ -112,13 +112,14 @@ jobs:
     - name: Run Database Migrations
       run: |
         # Run database migrations before deploying new version
-        # Create a temporary ECS task to run migrations
+        echo "🗄️ Starting database migration process..."
         
-        # Get the current task definition
-        TASK_DEF_ARN=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_BACKEND }} --query 'services[0].taskDefinition' --output text)
+        # Get the latest task definition that was just built
+        TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition cheasydiy-production-backend --query 'taskDefinition.taskDefinitionArn' --output text)
+        echo "Using task definition: $TASK_DEF_ARN"
         
-        # Run migration task
-        aws ecs run-task \
+        # Run migration task with proper error handling
+        MIGRATION_TASK=$(aws ecs run-task \
           --cluster ${{ env.ECS_CLUSTER }} \
           --task-definition $TASK_DEF_ARN \
           --launch-type FARGATE \
@@ -126,13 +127,15 @@ jobs:
           --overrides '{
             "containerOverrides": [{
               "name": "backend",
-              "command": ["python", "-m", "alembic", "upgrade", "head"]
+              "command": ["sh", "-c", "cd /app && python -c \"from app.database import create_tables; import asyncio; asyncio.run(create_tables())\" && echo \"Migration completed successfully\""]
             }]
           }' \
-          --query 'tasks[0].taskArn' --output text > migration_task_arn.txt
+          --query 'tasks[0].taskArn' --output text)
         
-        # Wait for migration to complete
-        MIGRATION_TASK=$(cat migration_task_arn.txt)
+        echo "Migration task started: $MIGRATION_TASK"
+        
+        # Wait for migration to complete (with timeout)
+        echo "⏳ Waiting for migration to complete..."
         aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $MIGRATION_TASK
         
         # Check if migration succeeded
@@ -140,6 +143,15 @@ jobs:
         
         if [ "$EXIT_CODE" != "0" ]; then
           echo "❌ Database migration failed with exit code: $EXIT_CODE"
+          
+          # Get logs for debugging
+          echo "📋 Migration task logs:"
+          aws logs get-log-events \
+            --log-group-name "/ecs/cheasydiy-production" \
+            --log-stream-name "backend/backend/$(echo $MIGRATION_TASK | cut -d'/' -f3)" \
+            --query 'events[*].message' \
+            --output text || echo "Could not retrieve logs"
+          
           exit 1
         fi
         
