@@ -168,7 +168,7 @@ jobs:
           --exclude "index.html" \
           --exclude "*.json"
         
-        aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html \
+        aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/ \
           --cache-control "no-cache, no-store, must-revalidate"
         
         aws s3 cp dist/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
