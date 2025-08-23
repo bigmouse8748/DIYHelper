@@ -52,7 +52,8 @@ async def test_database_connection():
         # 测试连接
         logger.info("Testing database connection...")
         async with engine.begin() as conn:
-            result = await conn.execute("SELECT 1 as test")
+            from sqlalchemy import text
+            result = await conn.execute(text("SELECT 1 as test"))
             row = result.fetchone()
             logger.info(f"Database connection successful! Result: {row}")
             
