@@ -15,7 +15,7 @@
 | `AWS_ACCOUNT_ID` | AWS账户ID | 123456789012 |
 | `OPENAI_API_KEY` | OpenAI API密钥 | sk-proj-xxxxx (您提供的密钥) |
 | `VITE_API_URL` | 生产API地址 | https://api.cheasydiy.com |
-| `S3_BUCKET_NAME` | S3存储桶名称 | cheasydiy.com |
+| `S3_BUCKET_NAME` | S3存储桶名称 | cheasydiy-production-frontend |
 | `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront分发ID | E1234567890ABC |
 
 ### 2. AWS资源确认
