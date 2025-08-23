@@ -158,20 +158,17 @@ jobs:
         echo "✅ Database schema synchronization completed successfully"
         echo "📊 Schema is now synchronized with local SQLAlchemy models"
 
-    - name: Update Backend Service to use Fargate Spot with Fallback
+    - name: Update Backend Service to use Fargate Only
       run: |
-        # Update service to use mixed capacity provider strategy for optimal cost/availability
+        # Update service to use only Fargate for stable deployment
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE_BACKEND }} \
-          --capacity-provider-strategy \
-            capacityProvider=FARGATE_SPOT,weight=4,base=0 \
-            capacityProvider=FARGATE,weight=1,base=0 \
           --force-new-deployment \
           --deployment-configuration "maximumPercent=200,minimumHealthyPercent=50"
         
-        echo "💰 Backend service updated to use 80% Fargate Spot + 20% Fargate fallback"
-        echo "📊 Expected cost savings: ~56% compared to 100% regular Fargate"
+        echo "🚀 Backend service updated to use 100% Fargate for stable deployment"
+        echo "📊 Using reliable Fargate capacity provider as configured in Terraform"
 
     - name: Wait for backend service to stabilize
       run: |

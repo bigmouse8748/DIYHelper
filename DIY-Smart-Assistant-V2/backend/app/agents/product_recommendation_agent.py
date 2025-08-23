@@ -5,8 +5,11 @@ Migrated from original diy-agent-system with improvements
 import asyncio
 import logging
 import random
+import os
+import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from openai import OpenAI
 from .base import BaseAgent
 from .base import AgentResult
 
@@ -25,6 +28,22 @@ class ProductRecommendationAgent(BaseAgent):
                 "features": ["ai_recommendations", "quality_scoring", "affiliate_links", "retailer_integration"]
             }
         )
+        
+        # Initialize OpenAI client
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logger.warning("OpenAI API key not found, product recommendations will use fallback data")
+            self.client = None
+        else:
+            try:
+                self.client = OpenAI(
+                    api_key=api_key,
+                    timeout=90.0
+                )
+                logger.info("OpenAI client initialized successfully for product recommendations")
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI client: {e}")
+                self.client = None
         self.retailer_urls = {
             "amazon": "https://www.amazon.com/s?k=",
             "home_depot": "https://www.homedepot.com/s/",
@@ -191,6 +210,16 @@ class ProductRecommendationAgent(BaseAgent):
         """Generate smart product recommendations based on analysis"""
         recommendations = []
         
+        # Use AI to generate recommendations if available
+        if self.client:
+            try:
+                ai_recommendations = await self._get_ai_recommendations(materials, tools, project_type, budget_range)
+                if ai_recommendations:
+                    return ai_recommendations
+            except Exception as e:
+                logger.error(f"AI recommendations failed, falling back to database: {e}")
+        
+        # Fallback to existing logic if AI fails
         # Process tools first
         for tool in tools:
             tool_name = tool.get("name", "").lower()
@@ -224,6 +253,115 @@ class ProductRecommendationAgent(BaseAgent):
                     })
         
         return recommendations
+
+    async def _get_ai_recommendations(self, materials: List[Dict], tools: List[Dict], 
+                                    project_type: str, budget_range: str) -> List[Dict]:
+        """Get AI-powered product recommendations using OpenAI"""
+        try:
+            # Build context for AI
+            context = {
+                "project_type": project_type,
+                "budget_range": budget_range,
+                "materials": materials[:10],  # Limit to prevent token overflow
+                "tools": tools[:10]
+            }
+            
+            prompt = f"""
+            You are an expert DIY product recommendation assistant. Based on the following project details, provide specific, real product recommendations.
+
+            Project Type: {project_type}
+            Budget Range: {budget_range}
+            
+            Materials Needed: {json.dumps(materials, indent=2)}
+            Tools Needed: {json.dumps(tools, indent=2)}
+            
+            Please provide product recommendations in the following JSON format:
+            {{
+                "recommendations": [
+                    {{
+                        "material": "Material/Tool Name",
+                        "category": "tools" or "materials",
+                        "products": [
+                            {{
+                                "name": "Specific product name",
+                                "brand": "Brand name",
+                                "model": "Model number if applicable",
+                                "price": "$X-Y price range",
+                                "quality_score": 4.5,
+                                "features": ["feature1", "feature2"],
+                                "title": "Brand Product Name",
+                                "platform": "Amazon",
+                                "rating": 4.5,
+                                "quality_reasons": ["reason1", "reason2", "reason3"],
+                                "recommendation_level": "Highly Recommended"
+                            }}
+                        ],
+                        "total_assessed": 5,
+                        "avg_quality_score": 4.3
+                    }}
+                ]
+            }}
+            
+            Focus on:
+            1. Real brands and specific models available in US retailers
+            2. Quality-to-price ratio appropriate for the budget range  
+            3. Professional recommendations based on project requirements
+            4. Include major retailers: Amazon, Home Depot, Lowes, Walmart
+            5. Provide 3-5 product options per material/tool category
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert DIY product recommendation assistant with extensive knowledge of tools, materials, and retailers."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=2500,
+                temperature=0.7
+            )
+            
+            result_text = response.choices[0].message.content
+            logger.info(f"OpenAI recommendations response: {result_text[:200]}...")
+            
+            # Parse JSON response
+            try:
+                start_idx = result_text.find('{')
+                end_idx = result_text.rfind('}') + 1
+                if start_idx != -1 and end_idx != 0:
+                    json_str = result_text[start_idx:end_idx]
+                    ai_result = json.loads(json_str)
+                    
+                    # Extract recommendations array
+                    recommendations = ai_result.get("recommendations", [])
+                    
+                    # Enhance with retailer links
+                    for rec in recommendations:
+                        for product in rec.get("products", []):
+                            product.update(self._enhance_product_with_links_ai(product))
+                    
+                    logger.info(f"Successfully parsed {len(recommendations)} AI recommendations")
+                    return recommendations
+                else:
+                    logger.error("No JSON found in OpenAI recommendations response")
+                    return []
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse OpenAI recommendations as JSON: {e}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"OpenAI recommendations API error: {e}")
+            return []
+
+    def _enhance_product_with_links_ai(self, product: Dict) -> Dict:
+        """Enhance AI-generated product with retailer links"""
+        search_query = f"{product.get('brand', '')} {product.get('name', '')} {product.get('model', '')}"
+        search_query = search_query.replace(" ", "+")
+        
+        return {
+            "product_url": f"{self.retailer_urls['amazon']}{search_query}",
+            "image_url": f"https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop",
+            "price_value_ratio": round(product.get("quality_score", 4.0) / self._extract_max_price(product.get("price", "$100")), 2)
+        }
 
     def _categorize_tool(self, tool_name: str) -> Optional[str]:
         """Categorize tool based on name"""
