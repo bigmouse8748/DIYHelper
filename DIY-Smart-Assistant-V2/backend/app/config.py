@@ -13,11 +13,18 @@ import os
 class Settings(BaseSettings):
     """Application settings configuration"""
     
+    # Environment identification
+    environment: str = os.getenv("ENVIRONMENT", "development")
+    
     # Application
     app_name: str = "DIY Smart Assistant"
     app_version: str = "2.0.0"
-    debug: bool = False  # Default to False for production
+    debug: bool = False  # Will be set based on environment
     secret_key: str = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._setup_environment_specific_config()
     
     # Database
     database_url: str = "sqlite:///./diy_assistant.db"
@@ -88,6 +95,39 @@ class Settings(BaseSettings):
     def parse_file_types(cls, v: str) -> List[str]:
         """Parse comma-separated file types"""
         return [ft.strip().lower() for ft in v.split(",") if ft.strip()]
+    
+    def _setup_environment_specific_config(self):
+        """Setup configuration based on environment"""
+        if self.environment == "production":
+            self._setup_production_config()
+        else:
+            self._setup_development_config()
+    
+    def _setup_production_config(self):
+        """Setup configuration for AWS production environment"""
+        self.debug = False
+        # Production CORS origins
+        if not hasattr(self, '_cors_origins_set'):
+            self.allowed_origins = "https://cheasydiy.com,https://www.cheasydiy.com,https://api.cheasydiy.com"
+            self._cors_origins_set = True
+    
+    def _setup_development_config(self):
+        """Setup configuration for local development"""
+        self.debug = True
+        # Development CORS origins  
+        if not hasattr(self, '_cors_origins_set'):
+            self.allowed_origins = "http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173"
+            self._cors_origins_set = True
+    
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment"""
+        return self.environment == "production"
+    
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment"""
+        return self.environment == "development"
     
     class Config:
         env_file = ".env"

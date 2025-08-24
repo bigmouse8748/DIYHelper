@@ -54,29 +54,10 @@ if not settings.debug:
         allowed_hosts=["api.cheasydiy.com", "cheasydiy.com", "www.cheasydiy.com", "localhost", "127.0.0.1"]
     )
 
-# CORS middleware - MUST be added last to execute first
+# CORS middleware - Environment-aware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        # Production origins
-        "https://cheasydiy.com",
-        "https://www.cheasydiy.com",
-        "https://api.cheasydiy.com",
-        # Development origins
-        "http://localhost:8080",
-        "http://localhost:8081",
-        "http://localhost:8082",
-        "http://localhost:8083",
-        "http://localhost:8084",
-        "http://localhost:8085",
-        "http://localhost:8086",
-        "http://localhost:8087",
-        "http://localhost:8088",  # Current frontend port
-        "http://127.0.0.1:8088",
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-    ],
+    allow_origins=settings.parse_cors_origins(settings.allowed_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

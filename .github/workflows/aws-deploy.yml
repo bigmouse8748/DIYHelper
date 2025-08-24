@@ -99,11 +99,11 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
-        VITE_API_URL: https://api.cheasydiy.com
       working-directory: ./DIY-Smart-Assistant-V2/frontend
       run: |
+        # Build with production environment (uses .env.production automatically)
         docker build \
-          --build-arg VITE_API_URL=$VITE_API_URL \
+          --build-arg NODE_ENV=production \
           -t $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG .
         docker tag $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
@@ -195,11 +195,10 @@ jobs:
 
     - name: Install dependencies and build
       working-directory: ./DIY-Smart-Assistant-V2/frontend
-      env:
-        VITE_API_URL: https://api.cheasydiy.com
       run: |
         npm ci
-        npm run build
+        # Build with production mode (automatically uses .env.production)
+        NODE_ENV=production npm run build
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2

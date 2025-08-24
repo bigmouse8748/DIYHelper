@@ -14,11 +14,13 @@ RUN npm ci --production=false
 # Copy source code
 COPY . .
 
-# Set build environment variable for API endpoint
-ARG VITE_API_URL=http://localhost:8000
+# Set build environment variables
+ARG NODE_ENV=production
+ARG VITE_API_URL
+ENV NODE_ENV=$NODE_ENV
 ENV VITE_API_URL=$VITE_API_URL
 
-# Build the application
+# Build the application (will use .env.production automatically in production mode)
 RUN npm run build
 
 # Production stage
