@@ -196,10 +196,12 @@ jobs:
 
     - name: Install dependencies and build
       working-directory: ./DIY-Smart-Assistant-V2/frontend
+      env:
+        VITE_API_URL: https://api.cheasydiy.com
       run: |
         npm ci
         # Build with production mode (uses .env.production)
-        npm run build -- --mode production
+        npm run build
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
